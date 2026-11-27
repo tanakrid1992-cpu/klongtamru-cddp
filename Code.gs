@@ -25,16 +25,25 @@ const LV = { r:1, w:2, d:3 };
 
 // ── รันครั้งเดียว: สร้างชีตผู้ใช้ + บัญชี admin (ดูรหัสผ่านใน Execution log) ──
 function setup() {
-  const sh = sheet_('Users');
-  if (sh.getLastRow() < 1) {
-    sh.appendRow(USER_H); styleHead_(sh, USER_H.length);
+  const sh = ss_().getSheetByName('Users');
+  if (!sh || String(sh.getRange(1, 8).getValue()) !== 'hash' || !readUsers_().some(u => u.username === 'admin')) return resetAdmin();
+  Logger.log('มีบัญชี admin อยู่แล้ว · ลืมรหัส? ให้รัน resetAdmin');
+}
+
+// ── ตั้งรหัส admin ใหม่ (ย้ายชีต Users ของระบบเดิมไปเก็บไว้ ถ้ามี) · ดูรหัสใน Execution log ──
+function resetAdmin() {
+  const ss = ss_();
+  let sh = ss.getSheetByName('Users');
+  if (sh && String(sh.getRange(1, 8).getValue()) !== 'hash') {
+    sh.setName('Users_เดิม_' + Utilities.formatDate(new Date(), TZ, 'yyyyMMdd_HHmm'));
+    sh = null;
   }
-  if (!readUsers_().some(u => u.username === 'admin')) {
-    const pw = Utilities.getUuid().slice(0, 10);
-    const salt = Utilities.getUuid();
-    sh.appendRow(['admin','ผู้ดูแลระบบ','superadmin','active',true,'{}',salt,hash_(salt, pw),'']);
-    Logger.log('สร้างบัญชี admin แล้ว · รหัสผ่านชั่วคราว: ' + pw + ' (เข้าระบบแล้วเปลี่ยนทันที)');
-  } else Logger.log('มีบัญชี admin อยู่แล้ว');
+  if (!sh) { sh = ss.insertSheet('Users'); sh.appendRow(USER_H); styleHead_(sh, USER_H.length); }
+  const pw = Utilities.getUuid().slice(0, 10), salt = Utilities.getUuid();
+  const row = ['admin','ผู้ดูแลระบบ','superadmin','active',true,'{}',salt,hash_(salt, pw)];
+  const u = readUsers_().find(x => x.username === 'admin');
+  if (u) sh.getRange(u.row, 1, 1, 8).setValues([row]); else sh.appendRow(row.concat(['']));
+  Logger.log('ชื่อผู้ใช้: admin · รหัสผ่านชั่วคราว: ' + pw + ' (เข้าระบบแล้วเปลี่ยนทันที)');
 }
 
 // ── HTTP ──
