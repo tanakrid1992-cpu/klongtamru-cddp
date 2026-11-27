@@ -309,7 +309,7 @@ body.picking .dr{transform:translateX(105%)}body.picking .ov{opacity:0;pointer-e
 
 /* ตาราง + ปุ่มบนแผนที่ */
 .cm{height:calc(100vh - 190px)!important;min-height:420px}
-.tpanel{position:fixed;left:calc(var(--side) + 24px);right:24px;bottom:0;height:min(66vh,680px);z-index:900;display:flex;flex-direction:column;border-radius:22px 22px 0 0;box-shadow:0 -20px 60px rgba(76,29,149,.18);transform:translateY(105%);transition:transform .45s var(--ease),left .4s var(--ease);visibility:hidden}
+.tpanel{position:fixed;left:calc(var(--side) + 24px);right:24px;bottom:0;height:min(66vh,680px);z-index:1050;display:flex;flex-direction:column;border-radius:22px 22px 0 0;box-shadow:0 -20px 60px rgba(76,29,149,.18);transform:translateY(105%);transition:transform .45s var(--ease),left .4s var(--ease);visibility:hidden}
 body.rail .tpanel{left:calc(var(--rail) + 24px)}
 body.tbl .tpanel{transform:none;visibility:visible}
 .tpanel:before{content:'';position:absolute;top:7px;left:50%;width:42px;height:4px;margin-left:-21px;border-radius:4px;background:var(--ln2)}
@@ -335,7 +335,7 @@ body.tbl .mact [data-a=tbl]{background:var(--ac);color:#fff;border-color:var(--a
 .dtb tr.sel td{background:var(--acs)}.dtb tr.sel td:first-child{box-shadow:inset 3px 0 0 var(--ac)}
 .dtb .n{width:44px;color:var(--mu2);text-align:right;font-size:12px}
 .dtb .mu{color:var(--mu2)}
-.dtb td.fl{width:1%;padding:10px 6px}.dtb .fl .bdg{display:inline-block;width:auto;margin:0 2px 0 0;padding:1px 5px}
+.dtb td.fl{overflow:visible;max-width:none;padding:10px 6px}.dtb .fl .bdg{display:inline-block;width:auto;margin:0 2px 0 0;padding:1px 5px}
 .dtb .act{position:sticky;right:0;background:inherit;text-align:right;width:1%}
 .dtb tbody td.act{background:#fff;box-shadow:-8px 0 12px -10px rgba(76,29,149,.25)}
 .dtb tbody tr:hover td.act,.dtb tr.sel td.act{background:var(--s2)}
