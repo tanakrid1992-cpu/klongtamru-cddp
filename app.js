@@ -307,7 +307,7 @@ function renderDash(){
   const n = k => (DATA[k]||[]).length, sum = ks => ks.filter(lv).reduce((a,k) => a + n(k), 0);
   let pop = 0; keysOf('hh').forEach(k => (DATA[k]||[]).forEach(r => pop += parseInt(r['จำนวนสมาชิก']) || 0));
   const all = Object.keys(CATS).filter(lv), max = Math.max(1, ...all.map(n));
-  const hr = new Date().getHours(), greet = hr < 12 ? 'สวัสดีตอนเช้า' : hr < 17 ? 'สวัสดีตอนบ่าย' : 'สวัสดีตอนเย็น';
+
   const K = [['t1','🏠','ครัวเรือน',sum(keysOf('hh'))],['t2','👥','ประชากร',pop],['t3','🏗️','โครงสร้างพื้นฐาน',sum(keysOf('inf'))],
              ['t4','🤝','ผู้รับสวัสดิการ',sum(keysOf('wf'))],['t5','⚠️','เหตุภัยพิบัติ',lv('disaster')?n('disaster'):0],['t6','📍','ข้อมูลทั้งหมด',sum(all)]];
   let side = '';
@@ -326,7 +326,7 @@ function renderDash(){
   const rec = recent.slice(0, 7).map(([t, k, r]) => `<div class="in" data-rec="${k}|${esc(r.id)}"><span class="x v" style="font-size:16px">${CATS[k].i}</span><div><b>${esc(prim(k, r) || '(ไม่ระบุ)')}</b><small>${esc(CATS[k].l)}${r.updated_by?' · '+esc(r.updated_by):''}</small></div><small style="margin-left:auto;white-space:nowrap">${ago(t)}</small></div>`).join('')
     || '<div class="ok-all" style="color:var(--mu)">ยังไม่มีการแก้ไขผ่านระบบ</div>';
   $('#view').innerHTML = `<div class="page st">
-    <div class="pt"><div><h1>${greet}, ${esc(USER.name)} 👋</h1><p>ภาพรวมข้อมูลเมืองดิจิทัล เทศบาลตำบลคลองตำหรุ · ${new Date().toLocaleDateString('th-TH',{dateStyle:'full'})}</p></div></div>
+    <div class="pt"><div><h1>ภาพรวมเทศบาล</h1><p>ภาพรวมข้อมูลเมืองดิจิทัล เทศบาลตำบลคลองตำหรุ · ${new Date().toLocaleDateString('th-TH',{dateStyle:'full'})}</p></div></div>
     <div class="kp">${K.map(([t,i,l,v]) => `<div class="k ${t}"><span class="ki">${i}</span><small>${l}</small><b data-n="${v}">0</b></div>`).join('')}</div>
     <div class="dg">
       <div class="card mapcard"><div class="slot" id="slot"></div></div>
