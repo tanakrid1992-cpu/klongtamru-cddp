@@ -466,6 +466,7 @@ function initMap(){
   setBase(localStorage.getItem('cddp_base') || 'gsat');
   $('#baseSel').onchange = e => setBase(e.target.value);
   new ResizeObserver(() => map.invalidateSize()).observe($('#map'));
+  map.on('moveend', drawPins);
   map.on('click', e => { if(pickMk){ pickMk.setLatLng(e.latlng); setLL(e.latlng.lat, e.latlng.lng); } });
   $('#tBnd').onclick = () => toggle('tBnd', bnd);
   $('#tRoad').onclick = () => toggle('tRoad', roadL);
@@ -489,23 +490,40 @@ function setBase(k){
   }
 }
 function mountMap(){ const s = $('#slot'); if(s){ s.appendChild(MB); map.invalidateSize(false); setTimeout(() => map.invalidateSize(), 80); } }
+// หมุดไอคอนตามหมวด — วาดเฉพาะที่อยู่ในจอ (ลื่นแม้มีหลายพันจุด)
+let ITEMS = [], ICONS = {};
+const PIN_MAX = 1200;
+function pinIcon(k, big){
+  const id = k + (big ? 1 : 0);
+  if(!ICONS[id]){ const c = CATS[k], s = big ? 34 : 28;
+    ICONS[id] = L.divIcon({className:'', iconSize:[s, s], iconAnchor:[s/2, s], popupAnchor:[0, -s + 4],
+      html:`<div class="mpin${big?' big':''}" style="--c:${c.c}"><span>${c.i}</span></div>`}); }
+  return ICONS[id];
+}
 function renderMap(fit){
-  pts.clearLayers(); MK = {};
   const sets = CUR ? [[CUR, filtered()]] : Object.keys(CATS).filter(k => lv(k) && !HIDDEN.has(k)).map(k => [k, DATA[k]]);
-  let n = 0;
-  sets.forEach(([k, rows]) => { const c = CATS[k];
-    rows.forEach(r => {
-      if(!hasLL(r)) return;
-      const m = L.circleMarker([+r.lat, +r.lng], {radius: CUR ? 8 : 6, color:'#fff', weight:2, fillColor:c.c, fillOpacity:1})
-        .bindPopup(() => popup(k, r), {maxWidth:320}).addTo(pts);
-      MK[k + ':' + r.id] = m; n++;
-    });
-  });
-  $('#mcount').textContent = num(n) + ' จุด' + (CUR ? '' : ' · ' + sets.length + ' หมวด');
+  ITEMS = [];
+  sets.forEach(([k, rows]) => rows.forEach(r => { if(hasLL(r)) ITEMS.push({k, r, ll: L.latLng(+r.lat, +r.lng)}); }));
+  $('#mcount').textContent = num(ITEMS.length) + ' จุด' + (CUR ? '' : ' · ' + sets.length + ' หมวด');
+  drawPins();
   if(fit){
-    if(CUR && n) map.flyToBounds(pts.getBounds(), {padding:[50,50], maxZoom:17, duration:.7});
+    if(CUR && ITEMS.length) map.flyToBounds(L.latLngBounds(ITEMS.map(x => x.ll)), {padding:[50,50], maxZoom:17, duration:.7});
     else map.flyToBounds(bnd.getBounds(), {padding:[20,20], duration:.7});
   }
+}
+function drawPins(){
+  const open = map._popup && map._popup._source && map._popup._source._key;
+  pts.clearLayers(); MK = {};
+  const vb = map.getBounds().pad(.25), vis = ITEMS.filter(x => vb.contains(x.ll));
+  const dots = vis.length > PIN_MAX; // หนาแน่นมาก → จุดสีบน canvas แล้วค่อยเป็นหมุดเมื่อซูมเข้า
+  vis.forEach(({k, r, ll}) => {
+    const m = dots ? L.circleMarker(ll, {radius:5, color:'#fff', weight:1.5, fillColor:CATS[k].c, fillOpacity:1})
+                   : L.marker(ll, {icon: pinIcon(k, !!CUR), riseOnHover:true});
+    m._key = k + ':' + r.id;
+    m.bindPopup(() => popup(k, r), {maxWidth:340, autoPanPadding:[30,30]}).addTo(pts);
+    MK[m._key] = m;
+    if(m._key === open) setTimeout(() => m.openPopup(), 0);
+  });
 }
 function popup(k, r){
   const c = CATS[k];
@@ -519,11 +537,11 @@ function focusRec(k, id, fromTable){
   document.querySelectorAll('tr.sel').forEach(x => x.classList.remove('sel'));
   const el = document.querySelector(`tr[data-id="${CSS.escape(String(id))}"]`);
   if(el){ el.classList.add('sel'); if(!fromTable) el.scrollIntoView({block:'center', behavior:'smooth'}); }
-  const m = MK[k + ':' + id];
-  if(!m) return toast('รายการนี้ยังไม่มีพิกัด กด ✎ เพื่อเพิ่มตำแหน่ง', 'in');
+  const key = k + ':' + id, it = ITEMS.find(x => x.k + ':' + x.r.id === key);
+  if(!it) return toast('รายการนี้ยังไม่มีพิกัด กด ✎ เพื่อเพิ่มตำแหน่ง', 'in');
   if(fromTable) $('#slot')?.scrollIntoView({block:'nearest', behavior:'smooth'});
-  map.flyTo(m.getLatLng(), 18, {duration:.8});
-  map.once('moveend', () => { m.openPopup(); pulse(m.getLatLng()); });
+  map.flyTo(it.ll, 18, {duration:.8});
+  map.once('moveend', () => setTimeout(() => { MK[key]?.openPopup(); pulse(it.ll); }, 30));
 }
 function autoLines(){
   if(CUR === 'road' && !map.hasLayer(roadL)) toggle('tRoad', roadL);

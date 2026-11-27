@@ -13,9 +13,9 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script defer src="config.js?v=2611270947"></script>
-<script defer src="geo.js?v=2611270947"></script>
-<script defer src="app.js?v=2611270947"></script>
+<script defer src="config.js?v=2611271338"></script>
+<script defer src="geo.js?v=2611271338"></script>
+<script defer src="app.js?v=2611271338"></script>
 <style>
 :root{
   --bg:#f7f5fc;--s1:#fff;--s2:#f3effb;--s3:#e9e2f8;--ln:#ece7f6;--ln2:#ddd4f1;
@@ -183,7 +183,7 @@ body.picking #map{cursor:crosshair}
 .leaflet-bar a{color:#5b5473!important;border-color:var(--ln)!important;width:36px!important;height:36px!important;line-height:36px!important}
 .pp h5{font-size:14px;margin-bottom:8px;display:flex;gap:8px;align-items:center}
 .pp h5 span{width:28px;height:28px;border-radius:9px;display:grid;place-items:center}
-.pp dl{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:12.5px;max-height:220px;overflow:auto}
+.pp dl{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:12.5px}
 .pp dt{color:var(--mu)}.pp dd{text-align:right;word-break:break-word;font-weight:500}
 .pp .a{display:flex;gap:6px;justify-content:flex-end;margin-top:12px}
 .pp a,.pp button{font-size:12px;padding:6px 11px;border-radius:9px;background:var(--acs);color:var(--acd);text-decoration:none;display:inline-flex;gap:5px;align-items:center}
@@ -307,6 +307,12 @@ body.picking .dr{transform:translateX(105%)}body.picking .ov{opacity:0;pointer-e
   #addTxt{display:none}
 }
 
+/* หมุดไอคอน */
+.mpin{width:100%;height:100%;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:var(--c);border:2px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,.35);display:grid;place-items:center;transition:transform .2s var(--ease)}
+.mpin span{transform:rotate(45deg);font-size:13px;line-height:1;filter:drop-shadow(0 1px 1px rgba(0,0,0,.3))}
+.mpin.big span{font-size:16px}
+.leaflet-marker-icon:hover .mpin{transform:rotate(-45deg) scale(1.18)}
+.leaflet-popup-content{max-height:none!important}
 /* ตาราง + ปุ่มบนแผนที่ */
 .cm{height:calc(100vh - 190px)!important;min-height:420px}
 .tpanel{position:fixed;left:calc(var(--side) + 24px);right:24px;bottom:0;height:min(66vh,680px);z-index:1050;display:flex;flex-direction:column;border-radius:22px 22px 0 0;box-shadow:0 -20px 60px rgba(76,29,149,.18);transform:translateY(105%);transition:transform .45s var(--ease),left .4s var(--ease);visibility:hidden}
