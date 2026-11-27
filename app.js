@@ -35,6 +35,9 @@ const P = {
   copy:'<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/>',
   dup:'<rect x="8" y="8" width="13" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/>',
   wrench:'<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9z"/>',
+  home:'<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
+  heart:'<path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7z"/>',
+  flame:'<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.4-.5-2-1-3-1-2.1-.2-4 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.2.4-2.3 1-3.3.3 1.6 1.1 2.8 2.5 2.8z"/>',
   out:'<circle cx="12" cy="12" r="9.5"/><path d="M4.9 4.9l14.2 14.2"/>'
 };
 const ic = (n, s) => `<svg class="i" viewBox="0 0 24 24"${s?` style="width:${s}px;height:${s}px"`:''} fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${P[n]||''}</svg>`;
@@ -180,6 +183,7 @@ function setSync(t){ const s = $('#sync'); if(!t){ s.classList.add('hide'); retu
 // ══════════ AUTH ══════════
 function showLogin(msg){
   $('#login').classList.remove('hide');
+  document.body.classList.add('login');
   const e = $('#lgErr'); e.textContent = msg || ''; e.classList.toggle('hide', !msg);
   if(msg){ e.style.animation = 'none'; e.offsetWidth; e.style.animation = ''; }
   setTimeout(() => ($('#lgU').value ? $('#lgP') : $('#lgU')).focus(), 120);
@@ -197,6 +201,7 @@ function signOutLocal(msg){
 function applyData(d, u){ DATA = d || {}; USER = u; Object.keys(CATS).forEach(k => DATA[k] = DATA[k] || []); analyze(); }
 function enter(){
   $('#login').classList.add('hide');
+  document.body.classList.remove('login');
   renderMe(); go(CUR && lv(CUR) ? CUR : null, true);
 }
 async function refresh(fresh){
@@ -261,7 +266,7 @@ const INFO = {
 
 // ══════════ SIDEBAR ══════════
 function renderMe(){
-  $('#meName').textContent = USER.name;
+  $('#meName').textContent = (new Date().getHours() < 12 ? 'สวัสดีตอนเช้า, ' : new Date().getHours() < 17 ? 'สวัสดีตอนบ่าย, ' : 'สวัสดีตอนเย็น, ') + USER.name;
   $('#meAv').textContent = (USER.name || '?').trim().charAt(0);
   $('#meRole').textContent = DEMO ? 'โหมดทดลอง' : ({superadmin:'ผู้ดูแลระบบสูงสุด',admin:'ผู้ดูแลระบบ'}[USER.role] || 'เจ้าหน้าที่');
   $('#mUsers').classList.toggle('hide', USER.role !== 'superadmin' || DEMO);
@@ -269,27 +274,29 @@ function renderMe(){
   $('#mPw').classList.toggle('hide', DEMO); $('#mOut').classList.toggle('hide', DEMO);
   $('#demoTag').classList.toggle('hide', !DEMO);
 }
+const GI = {hh:'home', inf:'road', pub:'landmark', env:'flame', hlt:'heart', wf:'users'};
+let LASTCAT = JSON.parse(localStorage.getItem('cddp_last') || '{}');
 function renderNav(){
-  let h = navItem('', null, 'ภาพรวม', '', '#8b5cf6');
-  GROUPS.forEach(([g, gl]) => {
-    const ks = keysOf(g).filter(lv); if(!ks.length) return;
-    h += `<div class="nv-g">${gl}</div>` + ks.map(k => navItem(k, CATS[k].i, CATS[k].l, DATA[k].length, CATS[k].c)).join('');
-  });
-  $('#navIn').innerHTML = h;
-  requestAnimationFrame(moveInd);
+  const g = CUR ? CATS[CUR].g : null;
+  let r = `<button class="ri${!CUR?' on':''}" data-go="" data-tip="ภาพรวม">${ic('grid')}</button>`;
+  GROUPS.forEach(([id, l]) => { const ks = keysOf(id).filter(lv); if(!ks.length) return;
+    r += `<button class="ri${g===id?' on':''}" data-grp="${id}" data-tip="${esc(l)} · ${num(ks.reduce((a,k) => a + DATA[k].length, 0))}">${ic(GI[id])}</button>`; });
+  $('#rail').innerHTML = r;
+  const t = !CUR
+    ? `<button class="tab on" data-go="">ภาพรวม</button>` + GROUPS.filter(([id]) => keysOf(id).some(lv)).map(([id, l]) => `<button class="tab" data-grp="${id}">${esc(l)}</button>`).join('')
+    : keysOf(g).filter(lv).map(k => `<button class="tab${k===CUR?' on':''}" data-go="${k}"><span>${CATS[k].i}</span>${esc(CATS[k].l)}<em>${num(DATA[k].length)}</em></button>`).join('');
+  $('#tabs').innerHTML = `<div class="tabs-in">${t}</div>` + (CUR && lv(CUR) >= 2 ? `<button class="tabplus" data-a="add" data-tip="เพิ่มข้อมูล (N)">${ic('plus')}</button>` : '');
+  requestAnimationFrame(() => $('#tabs .tab.on')?.scrollIntoView({inline:'center', block:'nearest', behavior:'smooth'}));
 }
-const navItem = (k, i, l, n, c) => `<div class="ni${(CUR||'')===k?' on':''}" data-go="${k}" data-tip="${esc(l)}" style="--c:${c}"><span class="ic">${i || ic('grid', 16)}</span><span class="lb">${esc(l)}</span>${n!==''?`<span class="ct">${num(n)}</span>`:''}</div>`;
-function moveInd(){
-  const on = $('#navIn .ni.on'), ind = $('#ind');
-  if(!on){ ind.style.opacity = 0; return; }
-  ind.style.opacity = 1; ind.style.left = on.offsetLeft + 'px'; ind.style.width = on.offsetWidth + 'px';
-  ind.style.transform = `translateY(${on.offsetTop}px)`;
-}
+function goGrp(g){ const ks = keysOf(g).filter(lv); if(ks.length) go(ks.includes(LASTCAT[g]) ? LASTCAT[g] : ks[0]); }
+function moveInd(){}
 
 // ══════════ ROUTER ══════════
 function go(k, fit){
   const same = (k || null) === CUR;
   CUR = k || null; closeDrawer(); document.body.classList.remove('tbl');
+  if(CUR){ LASTCAT[CATS[CUR].g] = CUR; localStorage.setItem('cddp_last', JSON.stringify(LASTCAT)); }
+  const pg = $('#view .page'); if(pg && !same){ pg.style.animation = 'none'; }
   document.body.classList.remove('nav'); $('#ov').classList.remove('sh');
   if(!same) F = { q:'', mode:'all', moo:'', sort:'new', col:'', dir:1 };
   renderNav();
@@ -326,7 +333,7 @@ function renderDash(){
   const rec = recent.slice(0, 7).map(([t, k, r]) => `<div class="in" data-rec="${k}|${esc(r.id)}"><span class="x v" style="font-size:16px">${CATS[k].i}</span><div><b>${esc(prim(k, r) || '(ไม่ระบุ)')}</b><small>${esc(CATS[k].l)}${r.updated_by?' · '+esc(r.updated_by):''}</small></div><small style="margin-left:auto;white-space:nowrap">${ago(t)}</small></div>`).join('')
     || '<div class="ok-all" style="color:var(--mu)">ยังไม่มีการแก้ไขผ่านระบบ</div>';
   $('#view').innerHTML = `<div class="page st">
-    <div class="pt"><div><h1>${greet}, ${esc(USER.name)} 👋</h1><p>ภาพรวมข้อมูลเมืองดิจิทัล เทศบาลตำบลคลองตำหรุ · ${new Date().toLocaleDateString('th-TH',{dateStyle:'full'})}</p></div></div>
+    <div class="pt"><div><h1>ภาพรวมเทศบาล</h1><p>ภาพรวมข้อมูลเมืองดิจิทัล เทศบาลตำบลคลองตำหรุ · ${new Date().toLocaleDateString('th-TH',{dateStyle:'full'})}</p></div></div>
     <div class="kp">${K.map(([t,i,l,v]) => `<div class="k ${t}"><span class="ki">${i}</span><small>${l}</small><b data-n="${v}">0</b></div>`).join('')}</div>
     <div class="dg">
       <div class="card mapcard"><div class="slot" id="slot"></div></div>
@@ -793,19 +800,21 @@ function userForm(u){
 // ══════════ EVENTS ══════════
 function bind(){
   hydrate();
-  $('#nav').addEventListener('click', e => { const t = e.target.closest('[data-go]'); if(t) go(t.dataset.go || null); });
+  ['#rail', '#tabs'].forEach(id => $(id).addEventListener('click', e => {
+    const a = e.target.closest('[data-a="add"]'); if(a) return openForm(null);
+    const g = e.target.closest('[data-grp]'); if(g) return goGrp(g.dataset.grp);
+    const t = e.target.closest('[data-go]'); if(t) go(t.dataset.go || null);
+  }));
   const tip = $('#tip');
   document.addEventListener('mouseover', e => {
-    const t = e.target.closest('.ni,[data-tip]');
-    const show = t && (t.matches('.mt [data-tip]') || (t.classList.contains('ni') && document.body.classList.contains('rail') && innerWidth > 960));
-    if(!show){ tip.classList.remove('sh'); return; }
+    const t = e.target.closest('[data-tip]');
+    if(!t || !t.closest('.mt,#rail,#tabs') || innerWidth <= 960){ tip.classList.remove('sh'); return; }
     const r = t.getBoundingClientRect(); tip.textContent = t.dataset.tip;
-    const right = t.closest('.mt');
-    tip.style.left = (right ? r.left - tip.offsetWidth - 10 : r.right + 12) + 'px'; tip.style.top = (r.top + r.height / 2 - 14) + 'px'; tip.classList.add('sh');
+    if(t.closest('#tabs')){ tip.style.left = (r.left + r.width/2 - tip.offsetWidth/2) + 'px'; tip.style.top = (r.top - 40) + 'px'; }
+    else { tip.style.left = (t.closest('.mt') ? r.left - tip.offsetWidth - 10 : r.right + 12) + 'px'; tip.style.top = (r.top + r.height / 2 - 15) + 'px'; }
+    tip.classList.add('sh');
   });
-  $('#colBtn').onclick = () => { document.body.classList.toggle('rail'); localStorage.setItem('cddp_rail', document.body.classList.contains('rail') ? 1 : ''); setTimeout(moveInd, 420); };
-  if(localStorage.getItem('cddp_rail')) document.body.classList.add('rail');
-  $('#hbBtn').onclick = () => { document.body.classList.add('nav'); $('#ov').classList.add('sh'); };
+  $('#rfBtn').onclick = () => refresh(true);
   $('#ov').onclick = () => { closeDrawer(); closeModal(); document.body.classList.remove('nav'); $('#ov').classList.remove('sh'); };
   $('#meBtn').onclick = e => { e.stopPropagation(); $('#menu').classList.toggle('sh'); };
   document.addEventListener('click', e => {
