@@ -87,7 +87,7 @@ const keysOf = g => Object.keys(CATS).filter(k => CATS[k].g === g);
 // ══════════ STATE ══════════
 let DATA = {}, USER = null, TOKEN = sessionStorage.getItem('cddp_t') || '';
 let CUR = null, EID = null, HIDDEN = new Set(JSON.parse(localStorage.getItem('cddp_hidden') || '[]')), MK = {}, LIMIT = 150;
-let F = { q:'', mode:'all', moo:'', sort:'new' }, ME_LL = null;
+let F = { q:'', mode:'all', moo:'', sort:'new', col:'', dir:1 }, ME_LL = null;
 const IDX = new WeakMap(), FLAG = new WeakMap();
 let INS = [], FIELDS = {};
 
@@ -100,7 +100,7 @@ const norm = s => String(s ?? '').toLowerCase().replace(/^(นาย|นาง�
 const digits = s => String(s ?? '').replace(/\D/g, '');
 const hasLL = r => +r.lat && +r.lng;
 const tsOf = r => { const t = Date.parse(String(r.ts || '').replace(' ', 'T')); return isNaN(t) ? 0 : t; };
-const prim = (k, r) => r[fieldsOf(k)[0]] || '';
+const prim = (k, r) => { const f = fieldsOf(k).find(f => !/หมายเหตุ/.test(f) && r[f] != null && String(r[f]).trim() !== '' && String(r[f]).trim() !== '-'); return f ? r[f] : ''; };
 function fieldsOf(k){ return FIELDS[k] || CATS[k].f; }
 function fmt(f, v){
   if(v == null || v === '') return '';
@@ -291,12 +291,12 @@ function go(k, fit){
   const same = (k || null) === CUR;
   CUR = k || null; closeDrawer();
   document.body.classList.remove('nav'); $('#ov').classList.remove('sh');
-  if(!same) F = { q:'', mode:'all', moo:'', sort:'new' };
+  if(!same) F = { q:'', mode:'all', moo:'', sort:'new', col:'', dir:1 };
   renderNav();
   const g = CUR && GROUPS.find(x => x[0] === CATS[CUR].g)[1];
   $('#crumb').innerHTML = CUR ? `<span class="c2">CDDP</span>${ic('right')}<span class="c2">${esc(g)}</span>${ic('right')}<b>${esc(CATS[CUR].l)}</b>` : `<span class="c2">CDDP</span>${ic('right')}<b>ภาพรวม</b>`;
-  $('#addBtn').classList.toggle('hide', !(CUR && lv(CUR) >= 2));
-  CUR ? renderCat() : renderDash();
+  $('#addBtn').classList.add('hide');
+  CUR ? renderCat() : (renderDash(), mapActs());
   renderMap(fit !== false);
   autoLines();
   try{ history.replaceState(null, '', CUR ? '#' + CUR : location.pathname); }catch(_){}
@@ -354,11 +354,13 @@ $('#view').addEventListener('click', e => {
   const g = e.target.closest('.br[data-go]'); if(g) return go(g.dataset.go);
   const ch = e.target.closest('[data-mode]');
   if(ch){ F.mode = ch.dataset.mode; LIMIT = 150; document.querySelectorAll('[data-mode]').forEach(x => x.classList.toggle('on', x === ch)); renderList(); renderMap(); return; }
-  const it = e.target.closest('.it[data-id]');
+  const th = e.target.closest('th[data-col]');
+  if(th){ const c = th.dataset.col; F.dir = F.col === c ? -F.dir : 1; F.col = c; renderList(); return; }
+  const it = e.target.closest('tr[data-id]');
   if(it){
     if(e.target.closest('[data-ed]')) return openForm(it.dataset.id);
     if(e.target.closest('[data-del]')) return removeRec(it.dataset.id);
-    focusRec(CUR, it.dataset.id);
+    focusRec(CUR, it.dataset.id, true);
   }
   if(e.target.closest('#moreBtn')){ LIMIT += 300; renderList(); }
   if(e.target.closest('#csvBtn')) exportCSV();
@@ -373,29 +375,27 @@ function renderCat(){
   const moos = fs.includes('หมู่') ? [...new Set(rows.map(r => String(r['หมู่'] || '').trim()).filter(Boolean))].sort((a, b) => a - b) : [];
   const chip = (m, l, n) => `<button class="chip${F.mode===m?' on':''}" data-mode="${m}">${l}${n!=null?` <em>${num(n)}</em>`:''}</button>`;
   $('#view').innerHTML = `<div class="page">
-    <div class="pt"><div><h1><span class="em" style="--c:${c.c}">${c.i}</span>${esc(c.l)}</h1><p>ทั้งหมด ${num(rows.length)} รายการ · มีพิกัด ${pct}% · คลิกรายการเพื่อดูบนแผนที่</p></div><div class="sp"></div>
-      <button class="btn sm" id="csvBtn">${ic('download',16)} ส่งออก CSV</button></div>
-    <div class="cg">
-      <div class="card lst">
-        <div class="fl">
-          <div class="fin">${ic('search')}<input id="flt" placeholder="กรองในหมวดนี้ (ชื่อ เลขที่ เบอร์…)" value="${esc(F.q)}"></div>
-          <div class="chips">${chip('all','ทั้งหมด',rows.length)}${cnt.bad?chip('bad','🔧 ชำรุด',cnt.bad):''}${cnt.due?chip('due','⏰ ถึงกำหนดตรวจ',cnt.due):''}${cnt.noloc?chip('noloc','📍 ไม่มีพิกัด',cnt.noloc):''}${cnt.out?chip('out','🚫 นอกเขต',cnt.out):''}${cnt.dup?chip('dup','👥 อาจซ้ำ',cnt.dup):''}
-            ${moos.length>1?`<span class="chip"><select id="fMoo"><option value="">ทุกหมู่</option>${moos.map(m => `<option${F.moo===m?' selected':''}>${esc(m)}</option>`).join('')}</select></span>`:''}
-            <span class="chip"><select id="fSort"><option value="new">ล่าสุด</option><option value="az">ก-ฮ</option><option value="near">ใกล้ฉัน</option></select></span></div>
-        </div>
-        <div class="items" id="items"></div>
+    <div class="pt"><div><h1><span class="em" style="--c:${c.c}">${c.i}</span>${esc(c.l)}</h1><p>ทั้งหมด ${num(rows.length)} รายการ · มีพิกัด ${pct}% · คลิกแถวในตารางเพื่อดูบนแผนที่</p></div></div>
+    <div class="card mapcard cm"><div class="slot" id="slot"></div></div>
+    <div class="card tcard" id="tcard">
+      <div class="tbar">
+        <h3>${ic('sheet')} ตารางข้อมูล <span id="tcnt"></span></h3>
+        <div class="fin">${ic('search')}<input id="flt" placeholder="กรอง (ชื่อ เลขที่ เบอร์…)" value="${esc(F.q)}"></div>
       </div>
-      <div class="card mapcard"><div class="slot" id="slot"></div></div>
+      <div class="chips" style="padding:0 16px 10px">${chip('all','ทั้งหมด',rows.length)}${cnt.bad?chip('bad','🔧 ชำรุด',cnt.bad):''}${cnt.due?chip('due','⏰ ถึงกำหนดตรวจ',cnt.due):''}${cnt.noloc?chip('noloc','📍 ไม่มีพิกัด',cnt.noloc):''}${cnt.out?chip('out','🚫 นอกเขต',cnt.out):''}${cnt.dup?chip('dup','👥 อาจซ้ำ',cnt.dup):''}
+        ${moos.length>1?`<span class="chip"><select id="fMoo"><option value="">ทุกหมู่</option>${moos.map(m => `<option${F.moo===m?' selected':''}>${esc(m)}</option>`).join('')}</select></span>`:''}
+        <span class="chip"><select id="fSort"><option value="new">ล่าสุด</option><option value="near">ใกล้ฉัน</option></select></span></div>
+      <div class="tw" id="items"></div>
     </div></div>`;
-  $('#fSort').value = F.sort;
+  $('#fSort').value = F.sort === 'near' ? 'near' : 'new';
   let t; $('#flt').addEventListener('input', e => { clearTimeout(t); t = setTimeout(() => { F.q = e.target.value; LIMIT = 150; renderList(); renderMap(); }, 120); });
   $('#fMoo') && ($('#fMoo').onchange = e => { F.moo = e.target.value; renderList(); renderMap(); });
   $('#fSort').onchange = e => {
-    F.sort = e.target.value;
+    F.sort = e.target.value; F.col = '';
     if(F.sort === 'near' && !ME_LL) return getGPS(ll => { ME_LL = ll; renderList(); }, () => { F.sort = 'new'; e.target.value = 'new'; });
     renderList();
   };
-  renderList(); mountMap();
+  renderList(); mountMap(); mapActs();
 }
 function filtered(){
   const q = norm(F.q), qd = digits(F.q);
@@ -405,26 +405,40 @@ function filtered(){
   if(q) l = l.filter(r => { const s = IDX.get(r) || ''; return s.includes(q) || (qd.length >= 3 && s.includes(qd)); });
   return l;
 }
+const blank = v => v == null || String(v).trim() === '' || String(v).trim() === '-';
 function renderList(){
   const c = CATS[CUR], fs = fieldsOf(CUR), L = lv(CUR);
   let l = filtered().slice();
-  if(F.sort === 'az') l.sort((a, b) => String(a[fs[0]]).localeCompare(String(b[fs[0]]), 'th'));
+  if(F.col){ const k = F.col, nm = l.every(r => blank(r[k]) || !isNaN(+r[k]));
+    l.sort((a, b) => blank(a[k]) - blank(b[k]) || F.dir * (nm ? (+a[k]) - (+b[k]) : String(a[k]).localeCompare(String(b[k]), 'th', {numeric:true}))); }
   else if(F.sort === 'near' && ME_LL) l.sort((a, b) => (hasLL(a) ? haversine(ME_LL, [+a.lat, +a.lng]) : 1e9) - (hasLL(b) ? haversine(ME_LL, [+b.lat, +b.lng]) : 1e9));
   else if(l.some(r => tsOf(r))) l.sort((a, b) => tsOf(b) - tsOf(a));
   else l.reverse();
+  // ซ่อนคอลัมน์ที่ว่างทั้งหมด
+  const cols = fs.filter(f => l.some(r => !blank(r[f])));
+  const show = cols.length ? cols : fs;
   const qq = F.q.trim().toLowerCase();
-  const h = l.slice(0, LIMIT).map((r, i) => {
+  $('#tcnt').textContent = `· ${num(l.length)} รายการ`;
+  const cell = (f, v) => blank(v) ? '<span class="mu">–</span>' : hl(fmt(f, v), qq);
+  const near = F.sort === 'near' && ME_LL && !F.col;
+  const rows = l.slice(0, LIMIT).map((r, i) => {
     const fl = FLAG.get(r) || {};
-    const sub = fs.slice(1).filter(f => !/หมายเหตุ|รายละเอียด/.test(f) && r[f] !== '' && r[f] != null).slice(0, 3)
-      .map(f => `<span>${esc(f)}: ${hl(fmt(f, r[f]), qq)}</span>`).join('');
-    const near = F.sort === 'near' && ME_LL && hasLL(r) ? `<span class="bdg v">${ic('nav',11)} ${num(Math.round(haversine(ME_LL, [+r.lat, +r.lng])))} ม.</span>` : '';
-    const b = (fl.bad?'<span class="bdg e">🔧 ชำรุด</span>':'') + (fl.due?'<span class="bdg w">⏰ ถึงกำหนดตรวจ</span>':'') + (fl.noloc?'<span class="bdg w">📍 ไม่มีพิกัด</span>':'') + (fl.out?'<span class="bdg w">🚫 นอกเขต</span>':'') + (fl.dup?'<span class="bdg v">👥 อาจซ้ำ</span>':'') + near;
-    return `<div class="it" data-id="${esc(r.id)}" style="--c:${c.c};animation-delay:${Math.min(i,14)*22}ms"><span class="dot">${c.i}</span>
-      <div class="b"><b>${hl(fmt(fs[0], r[fs[0]]) || '(ไม่ระบุชื่อ)', qq)}</b><div class="s">${sub}</div>${b?`<div>${b}</div>`:''}</div>
-      <div class="ac">${L>=2?`<button class="ib" data-ed title="แก้ไข">${ic('edit',16)}</button>`:''}${L>=3?`<button class="ib dan" data-del title="ลบ">${ic('trash',16)}</button>`:''}</div></div>`;
+    const b = (fl.bad?'<span class="bdg e" title="ชำรุด">🔧</span>':'') + (fl.due?'<span class="bdg w" title="ถึงกำหนดตรวจ">⏰</span>':'') + (fl.noloc?'<span class="bdg w" title="ไม่มีพิกัด">📍</span>':'') + (fl.out?'<span class="bdg w" title="นอกเขต">🚫</span>':'') + (fl.dup?'<span class="bdg v" title="อาจซ้ำ">👥</span>':'');
+    return `<tr data-id="${esc(r.id)}"><td class="n">${i+1}</td>${show.map(f => `<td>${cell(f, r[f])}</td>`).join('')}
+      ${near?`<td>${hasLL(r)?num(Math.round(haversine(ME_LL,[+r.lat,+r.lng])))+' ม.':'–'}</td>`:''}<td class="fl">${b}</td>
+      <td class="act"><button class="ib" title="ดูบนแผนที่"${hasLL(r)?'':' disabled'}>${ic('pin',16)}</button>${L>=2?`<button class="ib" data-ed title="แก้ไข">${ic('edit',16)}</button>`:''}${L>=3?`<button class="ib dan" data-del title="ลบ">${ic('trash',16)}</button>`:''}</td></tr>`;
   }).join('');
-  $('#items').innerHTML = h || `<div class="empty"><div>${c.i}</div>${F.q||F.mode!=='all'||F.moo?'ไม่พบรายการตามเงื่อนไข':'ยังไม่มีข้อมูลในหมวดนี้'}${!F.q&&F.mode==='all'&&L>=2?'<br><small>กด "เพิ่มข้อมูล" ด้านบน หรือกด N</small>':''}</div>`;
-  if(l.length > LIMIT) $('#items').insertAdjacentHTML('beforeend', `<button class="btn sm more" id="moreBtn">แสดงเพิ่ม (${num(l.length-LIMIT)})</button>`);
+  const arrow = f => F.col === f ? (F.dir > 0 ? ' ▲' : ' ▼') : '';
+  $('#items').innerHTML = l.length ? `<table class="dtb"><thead><tr><th class="n">#</th>${show.map(f => `<th data-col="${esc(f)}">${esc(f)}${arrow(f)}</th>`).join('')}${near?'<th>ระยะ</th>':''}<th></th><th class="act">จัดการ</th></tr></thead><tbody>${rows}</tbody></table>`
+    + (l.length > LIMIT ? `<button class="btn sm more" id="moreBtn">แสดงเพิ่ม (${num(l.length-LIMIT)})</button>` : '')
+    : `<div class="empty"><div>${c.i}</div>${F.q||F.mode!=='all'||F.moo?'ไม่พบรายการตามเงื่อนไข':'ยังไม่มีข้อมูลในหมวดนี้'}${!F.q&&F.mode==='all'&&L>=2?'<br><small>กดปุ่ม "เพิ่มข้อมูล" บนแผนที่ หรือกด N</small>':''}</div>`;
+}
+function mapActs(){
+  const a = $('#mact'); if(!a) return;
+  if(!CUR){ a.classList.add('hide'); return; }
+  a.classList.remove('hide');
+  a.innerHTML = (lv(CUR) >= 2 ? `<button class="btn pri sm" data-a="add">${ic('plus',16)} เพิ่มข้อมูล</button>` : '')
+    + `<button class="btn sm" data-a="csv">${ic('download',16)} CSV</button><button class="btn sm" data-a="tbl">${ic('sheet',16)} ไปที่ตาราง</button>`;
 }
 
 // ══════════ MAP ══════════
@@ -499,13 +513,13 @@ function popup(k, r){
     ${lv(k)>=2 ? `<button onclick="App.edit('${k}','${esc(r.id)}')">${ic('edit')} แก้ไข</button>` : ''}</div></div>`;
 }
 function pulse(ll){ const m = L.marker(ll, {icon: L.divIcon({className:'', html:'<div class="pulse"></div>', iconSize:[0,0]}), interactive:false}).addTo(map); setTimeout(() => m.remove(), 4300); }
-function focusRec(k, id){
-  document.querySelectorAll('.it.sel').forEach(x => x.classList.remove('sel'));
-  const el = document.querySelector(`.it[data-id="${CSS.escape(String(id))}"]`);
-  if(el){ el.classList.add('sel'); el.scrollIntoView({block:'nearest', behavior:'smooth'}); }
+function focusRec(k, id, fromTable){
+  document.querySelectorAll('tr.sel').forEach(x => x.classList.remove('sel'));
+  const el = document.querySelector(`tr[data-id="${CSS.escape(String(id))}"]`);
+  if(el){ el.classList.add('sel'); if(!fromTable) el.scrollIntoView({block:'center', behavior:'smooth'}); }
   const m = MK[k + ':' + id];
   if(!m) return toast('รายการนี้ยังไม่มีพิกัด กด ✎ เพื่อเพิ่มตำแหน่ง', 'in');
-  if(innerWidth <= 960) $('#slot')?.scrollIntoView({behavior:'smooth'});
+  if(fromTable) $('#slot')?.scrollIntoView({block:'nearest', behavior:'smooth'});
   map.flyTo(m.getLatLng(), 18, {duration:.8});
   map.once('moveend', () => { m.openPopup(); pulse(m.getLatLng()); });
 }
@@ -790,6 +804,8 @@ function bind(){
   });
   $('#md').addEventListener('click', e => { if(e.target.closest('[data-x]')) closeModal(); });
   $('#addBtn').onclick = () => openForm(null);
+  $('#mact').addEventListener('click', e => { const b = e.target.closest('[data-a]'); if(!b) return;
+    ({ add: () => openForm(null), csv: exportCSV, tbl: () => $('#tcard')?.scrollIntoView({behavior:'smooth'}) })[b.dataset.a](); });
   $('#pickDone').onclick = () => { endPick(); toast('ใช้ตำแหน่งนี้แล้ว'); };
   let qT;
   $('#q').addEventListener('input', () => { clearTimeout(qT); qT = setTimeout(search, 120); });

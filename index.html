@@ -306,6 +306,35 @@ body.picking .dr{transform:translateX(105%)}body.picking .ov{opacity:0;pointer-e
   .urow{grid-template-columns:1fr auto}.urow>:nth-child(2),.urow>:nth-child(3){display:none}
   #addTxt{display:none}
 }
+
+/* ตาราง + ปุ่มบนแผนที่ */
+.cm{height:min(56vh,560px)!important;min-height:360px;margin-bottom:16px}
+.mact{position:absolute;left:12px;top:56px;z-index:500;display:flex;gap:6px;flex-wrap:wrap;max-width:calc(100% - 80px)}
+.mact .btn{backdrop-filter:blur(10px)}.mact .btn:not(.pri){background:rgba(255,255,255,.94)}
+.tcard{overflow:hidden}
+.tbar{display:flex;align-items:center;gap:12px;padding:14px 16px 10px;flex-wrap:wrap}
+.tbar h3{font-size:14.5px;font-weight:600;flex:1;display:flex;align-items:center;gap:8px;white-space:nowrap}.tbar h3 .i{color:var(--ac)}
+.tbar h3 span{color:var(--mu);font-weight:400;font-size:13px}
+.tbar .fin{width:min(340px,100%)}
+.tw{overflow:auto;max-height:calc(100vh - 200px);border-top:1px solid var(--ln)}
+.dtb{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
+.dtb thead th{position:sticky;top:0;z-index:2;background:#faf8ff;color:#5d5675;font-weight:600;font-size:12px;text-align:left;padding:11px 12px;border-bottom:1px solid var(--ln);white-space:nowrap;cursor:pointer;user-select:none;transition:.15s}
+.dtb thead th:hover{color:var(--acd);background:var(--acs)}
+.dtb td{padding:10px 12px;border-bottom:1px solid var(--ln);white-space:nowrap;max-width:280px;overflow:hidden;text-overflow:ellipsis}
+.dtb tbody tr{cursor:pointer;transition:background .15s;animation:pin .35s var(--ease) both}
+.dtb tbody tr:nth-child(-n+15){animation-delay:calc(var(--d,0) * 1ms)}
+.dtb tbody tr:nth-child(even){background:#fcfbff}
+.dtb tbody tr:hover{background:var(--s2)}
+.dtb tr.sel td{background:var(--acs)}.dtb tr.sel td:first-child{box-shadow:inset 3px 0 0 var(--ac)}
+.dtb .n{width:44px;color:var(--mu2);text-align:right;font-size:12px}
+.dtb .mu{color:var(--mu2)}
+.dtb td.fl{width:1%;padding:10px 6px}.dtb .fl .bdg{display:inline-block;width:auto;margin:0 2px 0 0;padding:1px 5px}
+.dtb .act{position:sticky;right:0;background:inherit;text-align:right;width:1%}
+.dtb tbody td.act{background:#fff;box-shadow:-8px 0 12px -10px rgba(76,29,149,.25)}
+.dtb tbody tr:hover td.act,.dtb tr.sel td.act{background:var(--s2)}
+.dtb .act .ib{width:30px;height:30px}.dtb .act .ib:disabled{opacity:.3;pointer-events:none}
+.tw .empty{padding:40px}
+@media(max-width:960px){.cm{height:46vh!important}.tw{max-height:70vh}.mact{top:52px}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -365,6 +394,7 @@ body.picking .dr{transform:translateX(105%)}body.picking .ov{opacity:0;pointer-e
   <div id="mapBox">
     <div id="map"></div>
     <div class="mcount"><i data-ic="pin"></i><span id="mcount">0 จุด</span></div>
+    <div class="mact hide" id="mact"></div>
     <div class="mt">
       <select id="baseSel" title="แผนที่ฐาน">
         <option value="gsat">🛰️ ดาวเทียม</option><option value="groad">🗺️ ถนน</option>
