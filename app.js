@@ -289,7 +289,7 @@ function moveInd(){
 // ══════════ ROUTER ══════════
 function go(k, fit){
   const same = (k || null) === CUR;
-  CUR = k || null; closeDrawer();
+  CUR = k || null; closeDrawer(); document.body.classList.remove('tbl');
   document.body.classList.remove('nav'); $('#ov').classList.remove('sh');
   if(!same) F = { q:'', mode:'all', moo:'', sort:'new', col:'', dir:1 };
   renderNav();
@@ -360,7 +360,7 @@ $('#view').addEventListener('click', e => {
   if(it){
     if(e.target.closest('[data-ed]')) return openForm(it.dataset.id);
     if(e.target.closest('[data-del]')) return removeRec(it.dataset.id);
-    focusRec(CUR, it.dataset.id, true);
+    tbl(false); focusRec(CUR, it.dataset.id, true);
   }
   if(e.target.closest('#moreBtn')){ LIMIT += 300; renderList(); }
   if(e.target.closest('#csvBtn')) exportCSV();
@@ -375,11 +375,11 @@ function renderCat(){
   const moos = fs.includes('หมู่') ? [...new Set(rows.map(r => String(r['หมู่'] || '').trim()).filter(Boolean))].sort((a, b) => a - b) : [];
   const chip = (m, l, n) => `<button class="chip${F.mode===m?' on':''}" data-mode="${m}">${l}${n!=null?` <em>${num(n)}</em>`:''}</button>`;
   $('#view').innerHTML = `<div class="page">
-    <div class="pt"><div><h1><span class="em" style="--c:${c.c}">${c.i}</span>${esc(c.l)}</h1><p>ทั้งหมด ${num(rows.length)} รายการ · มีพิกัด ${pct}% · คลิกแถวในตารางเพื่อดูบนแผนที่</p></div></div>
+    <div class="pt"><div><h1><span class="em" style="--c:${c.c}">${c.i}</span>${esc(c.l)}</h1><p>ทั้งหมด ${num(rows.length)} รายการ · มีพิกัด ${pct}% · กดปุ่ม “ตาราง” บนแผนที่เพื่อดูรายการ</p></div></div>
     <div class="card mapcard cm"><div class="slot" id="slot"></div></div>
-    <div class="card tcard" id="tcard">
+    <div class="card tcard tpanel" id="tcard">
       <div class="tbar">
-        <h3>${ic('sheet')} ตารางข้อมูล <span id="tcnt"></span></h3>
+        <button class="ib" id="tClose" title="ปิดตาราง">${ic('x')}</button><h3>${ic('sheet')} ตารางข้อมูล <span id="tcnt"></span></h3>
         <div class="fin">${ic('search')}<input id="flt" placeholder="กรอง (ชื่อ เลขที่ เบอร์…)" value="${esc(F.q)}"></div>
       </div>
       <div class="chips" style="padding:0 16px 10px">${chip('all','ทั้งหมด',rows.length)}${cnt.bad?chip('bad','🔧 ชำรุด',cnt.bad):''}${cnt.due?chip('due','⏰ ถึงกำหนดตรวจ',cnt.due):''}${cnt.noloc?chip('noloc','📍 ไม่มีพิกัด',cnt.noloc):''}${cnt.out?chip('out','🚫 นอกเขต',cnt.out):''}${cnt.dup?chip('dup','👥 อาจซ้ำ',cnt.dup):''}
@@ -395,6 +395,7 @@ function renderCat(){
     if(F.sort === 'near' && !ME_LL) return getGPS(ll => { ME_LL = ll; renderList(); }, () => { F.sort = 'new'; e.target.value = 'new'; });
     renderList();
   };
+  $('#tClose').onclick = () => tbl(false);
   renderList(); mountMap(); mapActs();
 }
 function filtered(){
@@ -433,12 +434,13 @@ function renderList(){
     + (l.length > LIMIT ? `<button class="btn sm more" id="moreBtn">แสดงเพิ่ม (${num(l.length-LIMIT)})</button>` : '')
     : `<div class="empty"><div>${c.i}</div>${F.q||F.mode!=='all'||F.moo?'ไม่พบรายการตามเงื่อนไข':'ยังไม่มีข้อมูลในหมวดนี้'}${!F.q&&F.mode==='all'&&L>=2?'<br><small>กดปุ่ม "เพิ่มข้อมูล" บนแผนที่ หรือกด N</small>':''}</div>`;
 }
+function tbl(on){ document.body.classList.toggle('tbl', !!on && !!CUR); if(on) setTimeout(() => $('#flt')?.focus(), 350); }
 function mapActs(){
   const a = $('#mact'); if(!a) return;
   if(!CUR){ a.classList.add('hide'); return; }
   a.classList.remove('hide');
   a.innerHTML = (lv(CUR) >= 2 ? `<button class="btn pri sm" data-a="add">${ic('plus',16)} เพิ่มข้อมูล</button>` : '')
-    + `<button class="btn sm" data-a="csv">${ic('download',16)} CSV</button><button class="btn sm" data-a="tbl">${ic('sheet',16)} ไปที่ตาราง</button>`;
+    + `<button class="btn sm" data-a="csv">${ic('download',16)} CSV</button><button class="btn sm" data-a="tbl">${ic('sheet',16)} ตาราง <em class="tn">${num(DATA[CUR].length)}</em></button>`;
 }
 
 // ══════════ MAP ══════════
@@ -805,7 +807,7 @@ function bind(){
   $('#md').addEventListener('click', e => { if(e.target.closest('[data-x]')) closeModal(); });
   $('#addBtn').onclick = () => openForm(null);
   $('#mact').addEventListener('click', e => { const b = e.target.closest('[data-a]'); if(!b) return;
-    ({ add: () => openForm(null), csv: exportCSV, tbl: () => $('#tcard')?.scrollIntoView({behavior:'smooth'}) })[b.dataset.a](); });
+    ({ add: () => openForm(null), csv: exportCSV, tbl: () => tbl(!document.body.classList.contains('tbl')) })[b.dataset.a](); });
   $('#pickDone').onclick = () => { endPick(); toast('ใช้ตำแหน่งนี้แล้ว'); };
   let qT;
   $('#q').addEventListener('input', () => { clearTimeout(qT); qT = setTimeout(search, 120); });
@@ -827,7 +829,7 @@ function bind(){
   });
   document.addEventListener('keydown', e => {
     const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
-    if(e.key === 'Escape'){ if(pickMk) return endPick(); closeDrawer(); closeModal(); }
+    if(e.key === 'Escape'){ if(pickMk) return endPick(); if(document.body.classList.contains('tbl') && !$('#dr').classList.contains('sh')) return tbl(false); closeDrawer(); closeModal(); }
     if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's' && $('#dr').classList.contains('sh')){ e.preventDefault(); saveForm(); }
     if(typing || !USER) return;
     if(e.key === '/'){ e.preventDefault(); $('#q').focus(); }
