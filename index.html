@@ -2,240 +2,327 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#8b5cf6">
 <title>CDDP · เทศบาลตำบลคลองตำหรุ</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://script.google.com">
+<link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
+<link rel="preconnect" href="https://unpkg.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://mt0.google.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="config.js"></script>
-<script src="geo.js"></script>
+<script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script defer src="config.js"></script>
+<script defer src="geo.js"></script>
+<script defer src="app.js"></script>
 <style>
 :root{
-  --bg:#13161b;--s1:#1b1f26;--s2:#222731;--s3:#2b313c;--ln:rgba(255,255,255,.07);
-  --tx:#ece9e4;--mu:#8d949f;--ac:#f2873a;--ac2:#ffb070;--ok:#34d399;--er:#f87171;
-  --r:16px;--rail:72px;--side:252px;--ease:cubic-bezier(.22,.8,.26,1);
+  --bg:#f7f5fc;--s1:#fff;--s2:#f3effb;--s3:#e9e2f8;--ln:#ece7f6;--ln2:#ddd4f1;
+  --tx:#2a2440;--mu:#7c7494;--mu2:#a59fba;--ac:#8b5cf6;--ac2:#a78bfa;--acd:#6d28d9;--acs:#f1ebff;
+  --ok:#10b981;--er:#ef4444;--wa:#f59e0b;
+  --r:18px;--rail:76px;--side:260px;--ease:cubic-bezier(.22,.8,.26,1);
+  --sh1:0 1px 2px rgba(76,29,149,.04),0 6px 20px rgba(76,29,149,.06);
+  --sh2:0 2px 6px rgba(76,29,149,.06),0 18px 40px rgba(76,29,149,.12);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
-body{font:14px/1.5 'IBM Plex Sans Thai',system-ui,sans-serif;color:var(--tx);background:
-  radial-gradient(1200px 600px at 80% -10%,rgba(242,135,58,.10),transparent 60%),
-  radial-gradient(900px 500px at -10% 110%,rgba(45,212,191,.06),transparent 60%),var(--bg);overflow:hidden}
+body{font:14px/1.55 'IBM Plex Sans Thai',system-ui,sans-serif;color:var(--tx);overflow:hidden;
+  background:radial-gradient(900px 520px at 85% -10%,#ede4ff 0,transparent 60%),radial-gradient(700px 480px at -10% 105%,#e6f0ff 0,transparent 60%),var(--bg)}
 button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer;border:0;background:none}
-::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-thumb{background:var(--s3);border-radius:8px}
+.i{width:18px;height:18px;flex:none;display:inline-block;vertical-align:middle}
+::-webkit-scrollbar{width:8px;height:8px}::-webkit-scrollbar-thumb{background:#ddd4f1;border-radius:8px}::-webkit-scrollbar-thumb:hover{background:#c9bbef}
 .hide{display:none!important}
-
-/* ── Layout ── */
-.app{display:grid;grid-template-rows:100vh;grid-template-columns:var(--side) 1fr;height:100vh;transition:grid-template-columns .35s var(--ease)}
+.app{display:grid;grid-template-columns:var(--side) 1fr;grid-template-rows:100vh;height:100vh;transition:grid-template-columns .4s var(--ease)}
 body.rail .app{grid-template-columns:var(--rail) 1fr}
+#prog{position:fixed;top:0;left:0;height:3px;width:0;z-index:5000;background:linear-gradient(90deg,var(--ac),#ec4899,var(--ac2));box-shadow:0 0 12px rgba(139,92,246,.6);transition:width .4s var(--ease),opacity .4s}
 
-/* ── Sidebar (แบบในวิดีโอ: ย่อเป็นไอคอน/ขยายมีชื่อ) ── */
-.sb{height:100vh;overflow:hidden;background:rgba(22,25,31,.92);border-right:1px solid var(--ln);display:flex;flex-direction:column;min-width:0;position:relative;z-index:20}
-.sb-h{display:flex;align-items:center;gap:10px;padding:16px 14px 12px;height:64px}
-.logo{width:38px;height:38px;flex:none;border-radius:11px;background:linear-gradient(135deg,var(--ac),#e5602a);display:grid;place-items:center;font-weight:700;color:#fff;box-shadow:0 6px 18px rgba(242,135,58,.35)}
+/* ── Sidebar ── */
+.sb{height:100vh;background:rgba(255,255,255,.82);backdrop-filter:blur(16px);border-right:1px solid var(--ln);display:flex;flex-direction:column;min-width:0;position:relative;z-index:30}
+.sb-h{display:flex;align-items:center;gap:11px;padding:16px 14px 10px;min-height:68px}
+.logo{width:40px;height:40px;flex:none;border-radius:13px;background:linear-gradient(135deg,#8b5cf6,#c084fc);display:grid;place-items:center;font-weight:700;color:#fff;box-shadow:0 8px 20px rgba(139,92,246,.35);position:relative;overflow:hidden}
+.logo:after{content:'';position:absolute;inset:-40%;background:linear-gradient(120deg,transparent 40%,rgba(255,255,255,.55) 50%,transparent 60%);animation:shine 4.5s infinite}
+@keyframes shine{0%,70%{transform:translateX(-60%)}100%{transform:translateX(60%)}}
 .brand{min-width:0;flex:1;white-space:nowrap;overflow:hidden}
-.brand b{display:block;font-size:15px}.brand small{color:var(--mu);font-size:11px}
-.colbtn{width:30px;height:30px;border-radius:8px;color:var(--mu);display:grid;place-items:center;flex:none;transition:.2s}
-.colbtn:hover{background:var(--s2);color:var(--tx)}
-body.rail .brand{display:none}
-body.rail .sb-h{flex-direction:column;height:auto;gap:8px}
-.nv{flex:1;min-height:0;overscroll-behavior:contain;overflow-y:auto;overflow-x:hidden;padding:6px 10px 12px;position:relative}
-.nv-g{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:#5f6671;padding:14px 10px 6px;white-space:nowrap}
-body.rail .nv-g{font-size:0;padding:8px 0;border-top:1px solid var(--ln);margin:6px 8px 0}
-.ni{position:relative;z-index:1;display:flex;align-items:center;gap:12px;height:38px;padding:0 10px;border-radius:11px;color:#b9bec6;white-space:nowrap;cursor:pointer;transition:color .2s,background .2s}
-.ni:hover{background:rgba(255,255,255,.04);color:#fff}
-.ni.on{color:#1b1209;font-weight:600}
-.ni .ic{width:22px;text-align:center;flex:none;font-size:15px}
+.brand b{display:block;font-size:15.5px;letter-spacing:.01em}.brand small{color:var(--mu);font-size:11px}
+.colbtn{width:32px;height:32px;border-radius:10px;color:var(--mu);display:grid;place-items:center;flex:none;transition:.25s}
+.colbtn:hover{background:var(--s2);color:var(--ac)}
+body.rail .brand{display:none}body.rail .sb-h{flex-direction:column;gap:8px}
+body.rail .colbtn .i{transform:scaleX(-1)}
+.nv{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;padding:4px 12px 14px;position:relative}
+.nv-g{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu2);font-weight:600;padding:14px 10px 6px;white-space:nowrap}
+body.rail .nv-g{font-size:0;padding:0;border-top:1px solid var(--ln);margin:10px 8px}
+.ni{position:relative;z-index:1;display:flex;align-items:center;gap:11px;height:40px;padding:0 10px;border-radius:12px;color:#5b5473;white-space:nowrap;cursor:pointer;transition:color .25s,background .25s,transform .2s}
+.ni:hover{background:var(--s2);color:var(--acd);transform:translateX(2px)}
+.ni.on{color:#fff;font-weight:600}.ni.on:hover{background:none;transform:none}
+.ni .ic{width:28px;height:28px;flex:none;display:grid;place-items:center;border-radius:9px;font-size:15px;background:color-mix(in srgb,var(--c) 14%,#fff);transition:.25s}
+.ni.on .ic{background:rgba(255,255,255,.22)}
 .ni .lb{flex:1;overflow:hidden;text-overflow:ellipsis}
-.ni .ct{font-size:11px;min-width:24px;text-align:center;padding:1px 7px;border-radius:9px;background:var(--s2);color:var(--mu)}
-.ni.on .ct{background:rgba(0,0,0,.18);color:#1b1209}
+.ni .ct{font-size:11px;min-width:26px;text-align:center;padding:1px 7px;border-radius:9px;background:var(--s2);color:var(--mu);font-weight:500}
+.ni.on .ct{background:rgba(255,255,255,.25);color:#fff}
 body.rail .ni{justify-content:center;padding:0}body.rail .ni .lb,body.rail .ni .ct{display:none}
-.ind{position:absolute;left:10px;right:10px;height:38px;border-radius:11px;background:linear-gradient(135deg,var(--ac),var(--ac2));box-shadow:0 6px 20px rgba(242,135,58,.35);transition:transform .38s var(--ease),opacity .2s;pointer-events:none;top:0}
-.tip{position:fixed;z-index:999;background:#0c0e12;border:1px solid var(--ln);padding:5px 10px;border-radius:8px;font-size:12px;pointer-events:none;opacity:0;transition:opacity .15s;white-space:nowrap}
-.sb-f{border-top:1px solid var(--ln);padding:10px}
-.me{display:flex;align-items:center;gap:10px;padding:8px;border-radius:12px;cursor:pointer;transition:.2s;white-space:nowrap}
+.ind{position:absolute;left:12px;height:40px;border-radius:12px;background:linear-gradient(135deg,#8b5cf6,#a78bfa);box-shadow:0 8px 22px rgba(139,92,246,.38);transition:transform .45s var(--ease),width .3s,opacity .2s;pointer-events:none;top:0}
+.tip{position:fixed;z-index:9999;background:var(--tx);color:#fff;padding:6px 11px;border-radius:9px;font-size:12px;pointer-events:none;opacity:0;transform:translateX(-4px);transition:.18s;white-space:nowrap;box-shadow:var(--sh2)}
+.tip.sh{opacity:1;transform:none}
+.sb-f{border-top:1px solid var(--ln);padding:10px 12px;position:relative}
+.me{display:flex;align-items:center;gap:10px;padding:8px;border-radius:14px;cursor:pointer;transition:.2s;white-space:nowrap}
 .me:hover{background:var(--s2)}
-.av{width:34px;height:34px;border-radius:50%;flex:none;background:linear-gradient(135deg,#2dd4bf,#3b82f6);display:grid;place-items:center;font-weight:600;color:#fff}
-.me div{min-width:0;flex:1;overflow:hidden}.me b{display:block;font-size:13px;overflow:hidden;text-overflow:ellipsis}.me small{color:var(--mu);font-size:11px}
-body.rail .me>div,body.rail .me>span{display:none}body.rail .me{justify-content:center}
-.menu{position:absolute;bottom:68px;left:10px;width:232px;background:#1f242c;border:1px solid var(--ln);border-radius:14px;padding:6px;box-shadow:0 20px 50px rgba(0,0,0,.5);opacity:0;transform:translateY(8px) scale(.98);pointer-events:none;transition:.22s var(--ease)}
+.av{width:36px;height:36px;border-radius:12px;flex:none;background:linear-gradient(135deg,#a78bfa,#f0abfc);display:grid;place-items:center;font-weight:600;color:#fff}
+.me>div{min-width:0;flex:1;overflow:hidden}.me b{display:block;font-size:13px;overflow:hidden;text-overflow:ellipsis}.me small{color:var(--mu);font-size:11px}
+body.rail .me>div,body.rail .me>.i{display:none}body.rail .me{justify-content:center}
+.menu{position:absolute;bottom:70px;left:12px;width:240px;background:#fff;border:1px solid var(--ln);border-radius:16px;padding:6px;box-shadow:var(--sh2);opacity:0;transform:translateY(8px) scale(.97);transform-origin:bottom left;pointer-events:none;transition:.25s var(--ease);z-index:40}
 .menu.sh{opacity:1;transform:none;pointer-events:auto}
-.menu button{display:flex;gap:10px;width:100%;padding:9px 10px;border-radius:9px;text-align:left}
-.menu button:hover{background:var(--s2)}
+.menu button{display:flex;align-items:center;gap:10px;width:100%;padding:10px 11px;border-radius:10px;text-align:left;color:#4b4463;transition:.15s}
+.menu button:hover{background:var(--acs);color:var(--acd)}
+.menu hr{border:0;border-top:1px solid var(--ln);margin:4px 6px}
 
 /* ── Main ── */
 .mn{display:flex;flex-direction:column;min-width:0;height:100vh}
-.tb{height:64px;flex:none;display:flex;align-items:center;gap:12px;padding:0 22px;border-bottom:1px solid var(--ln)}
-.crumb{flex:1;min-width:0;color:var(--mu);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.crumb b{color:var(--tx);font-weight:500}
-.hb{display:none;width:36px;height:36px;border-radius:10px;background:var(--s2)}
+.tb{height:68px;flex:none;display:flex;align-items:center;gap:10px;padding:0 24px;border-bottom:1px solid var(--ln);background:rgba(255,255,255,.55);backdrop-filter:blur(12px);position:relative;z-index:20}
+.crumb{flex:1;min-width:0;color:var(--mu);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:6px}
+.crumb b{color:var(--tx);font-weight:600}.crumb .i{width:14px;height:14px;color:var(--mu2)}
+.ib.hb{display:none}
 .srch{position:relative}
-.srch input{width:260px;height:38px;border-radius:11px;border:1px solid var(--ln);background:var(--s1);padding:0 14px 0 36px;outline:0;transition:.25s var(--ease)}
-.srch input:focus{width:340px;border-color:rgba(242,135,58,.5);box-shadow:0 0 0 4px rgba(242,135,58,.1)}
-.srch:before{content:'⌕';position:absolute;left:12px;top:7px;color:var(--mu);font-size:17px}
-.qres{position:absolute;right:0;top:46px;width:380px;max-height:60vh;overflow:auto;background:#1f242c;border:1px solid var(--ln);border-radius:14px;box-shadow:0 20px 50px rgba(0,0,0,.5);padding:6px;z-index:50}
-.qi{display:flex;gap:10px;align-items:center;padding:8px 10px;border-radius:10px;cursor:pointer}
-.qi:hover,.qi.fc{background:var(--s2)}
-.qi .d{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;flex:none}
-.qi b{display:block;font-weight:500;font-size:13px}.qi small{color:var(--mu);font-size:11.5px}
-mark{background:rgba(242,135,58,.3);color:#ffd2ad;border-radius:3px}
-.btn{height:38px;padding:0 16px;border-radius:11px;background:var(--s2);border:1px solid var(--ln);display:inline-flex;align-items:center;gap:7px;white-space:nowrap;transition:.2s}
-.btn:hover{background:var(--s3)}
-.btn.pri{background:linear-gradient(135deg,var(--ac),#ea6b2b);border:0;color:#fff;font-weight:600;box-shadow:0 6px 18px rgba(242,135,58,.3)}
-.btn.pri:hover{transform:translateY(-1px);filter:brightness(1.07)}
-.btn.sm{height:32px;padding:0 12px;font-size:13px}
-.btn:disabled{opacity:.5;pointer-events:none}
-.ib{width:34px;height:34px;border-radius:10px;display:inline-grid;place-items:center;color:var(--mu);transition:.2s}
-.ib:hover{background:var(--s2);color:var(--tx)}
+.srch input{width:280px;height:40px;border-radius:12px;border:1px solid var(--ln);background:#fff;padding:0 42px 0 38px;outline:0;transition:.3s var(--ease);box-shadow:var(--sh1)}
+.srch input:focus{width:380px;border-color:var(--ac2);box-shadow:0 0 0 4px rgba(139,92,246,.14)}
+.srch>.i{position:absolute;left:12px;top:11px;color:var(--mu2)}
+.srch kbd{position:absolute;right:10px;top:10px;font:11px inherit;background:var(--s2);color:var(--mu);border-radius:6px;padding:1px 7px}
+.qres{position:absolute;right:0;top:48px;width:420px;max-height:66vh;overflow:auto;background:#fff;border:1px solid var(--ln);border-radius:16px;box-shadow:var(--sh2);padding:6px;z-index:60;animation:pop .22s var(--ease)}
+@keyframes pop{from{opacity:0;transform:translateY(-6px) scale(.98)}}
+.qh{font-size:11px;color:var(--mu2);padding:8px 10px 4px;display:flex;justify-content:space-between}
+.qi{display:flex;gap:11px;align-items:center;padding:9px 10px;border-radius:12px;cursor:pointer;transition:.15s}
+.qi:hover,.qi.fc{background:var(--acs)}
+.qi .d{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;flex:none;font-size:16px}
+.qi b{display:block;font-weight:500;font-size:13.5px}.qi small{color:var(--mu);font-size:11.5px}
+mark{background:#ede4ff;color:var(--acd);border-radius:4px;padding:0 1px}
+.btn{position:relative;overflow:hidden;height:40px;padding:0 16px;border-radius:12px;background:#fff;border:1px solid var(--ln);display:inline-flex;align-items:center;gap:8px;white-space:nowrap;transition:.2s;color:#4b4463;box-shadow:var(--sh1)}
+.btn:hover{border-color:var(--ln2);color:var(--acd);transform:translateY(-1px)}
+.btn.pri{background:linear-gradient(135deg,#8b5cf6,#a78bfa);border:0;color:#fff;font-weight:600;box-shadow:0 8px 20px rgba(139,92,246,.35)}
+.btn.pri:hover{box-shadow:0 12px 26px rgba(139,92,246,.45);color:#fff}
+.btn.sm{height:34px;padding:0 12px;font-size:13px;border-radius:10px}
+.btn.dan{color:var(--er)}
+.btn:disabled{opacity:.55;pointer-events:none}
+.rip{position:absolute;border-radius:50%;transform:scale(0);background:rgba(255,255,255,.55);animation:rip .6s ease-out;pointer-events:none}
+.btn:not(.pri) .rip{background:rgba(139,92,246,.18)}
+@keyframes rip{to{transform:scale(4);opacity:0}}
+.ib{width:36px;height:36px;border-radius:11px;display:inline-grid;place-items:center;color:var(--mu);transition:.2s;flex:none}
+.ib:hover{background:var(--acs);color:var(--acd)}
+.ib.dan:hover{background:#fee2e2;color:var(--er)}
+.spin{animation:sp 1s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}
 
-.view{flex:1;overflow:auto;padding:22px}
-.page{animation:pin .45s var(--ease)}
-@keyframes pin{from{opacity:0;filter:blur(8px);transform:translateY(10px)}to{opacity:1;filter:none;transform:none}}
+.view{flex:1;overflow:auto;padding:24px}
+.page{animation:pin .5s var(--ease)}
+@keyframes pin{from{opacity:0;filter:blur(8px);transform:translateY(12px)}to{opacity:1;filter:none;transform:none}}
+.st>*{animation:pin .5s var(--ease) both}
+.st>*:nth-child(2){animation-delay:.05s}.st>*:nth-child(3){animation-delay:.1s}.st>*:nth-child(4){animation-delay:.15s}.st>*:nth-child(5){animation-delay:.2s}.st>*:nth-child(6){animation-delay:.25s}
 .pt{display:flex;align-items:flex-end;gap:12px;margin-bottom:18px;flex-wrap:wrap}
-.pt h1{font-size:26px;font-weight:600;letter-spacing:-.01em}
-.pt p{color:var(--mu);font-size:13px}
+.pt h1{font-size:26px;font-weight:600;letter-spacing:-.01em;display:flex;align-items:center;gap:12px}
+.pt h1 .em{width:46px;height:46px;border-radius:15px;display:grid;place-items:center;font-size:23px;background:color-mix(in srgb,var(--c) 15%,#fff);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 22%,#fff)}
+.pt p{color:var(--mu);font-size:13px;margin-top:2px}
 .pt .sp{flex:1}
-.card{background:linear-gradient(180deg,rgba(255,255,255,.025),transparent),var(--s1);border:1px solid var(--ln);border-radius:var(--r)}
-.ch{display:flex;align-items:center;gap:8px;padding:14px 16px 0}
-.ch h3{font-size:14px;font-weight:600;flex:1}
-.ch small{color:var(--mu)}
+.card{background:var(--s1);border:1px solid var(--ln);border-radius:var(--r);box-shadow:var(--sh1)}
+.ch{display:flex;align-items:center;gap:8px;padding:15px 18px 4px}
+.ch h3{font-size:14.5px;font-weight:600;flex:1;display:flex;align-items:center;gap:8px}
+.ch h3 .i{color:var(--ac)}
+.ch small{color:var(--mu2);font-size:11.5px}
 
-/* Dashboard */
-.dg{display:grid;grid-template-columns:1fr 340px;gap:16px}
-.kp{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-top:16px}
-.k{border-radius:var(--r);padding:14px 16px;border:1px solid var(--ln);position:relative;overflow:hidden;transition:transform .25s var(--ease)}
-.k:hover{transform:translateY(-3px)}
-.k small{color:rgba(255,255,255,.65);font-size:12px;display:flex;gap:6px;align-items:center}
-.k b{display:block;font-size:24px;font-weight:600;margin-top:4px}
-.k:after{content:attr(data-i);position:absolute;right:10px;bottom:-6px;font-size:44px;opacity:.12}
-.t1{background:linear-gradient(160deg,#4a3326,#2a2320)}.t2{background:linear-gradient(160deg,#21463f,#1d2826)}
-.t3{background:linear-gradient(160deg,#4a4228,#26241e)}.t4{background:linear-gradient(160deg,#2d3a52,#1e232d)}
-.t5{background:linear-gradient(160deg,#52292b,#291e20)}.t6{background:linear-gradient(160deg,#3b2f4f,#221f2a)}
-.grp{padding:6px 16px 14px}
-.grp h4{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#5f6671;margin:12px 0 6px}
-.br{display:grid;grid-template-columns:26px 1fr 28px;gap:10px;align-items:center;padding:6px 0;cursor:pointer}
-.br .e{font-size:15px;text-align:center}
-.br .t{display:flex;justify-content:space-between;font-size:12.5px;color:#c5cad1}.br .t b{color:#fff;font-weight:600}
+/* KPI */
+.kp{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:16px}
+.k{border-radius:var(--r);padding:16px 18px;position:relative;overflow:hidden;transition:transform .3s var(--ease),box-shadow .3s;border:1px solid rgba(255,255,255,.7);box-shadow:var(--sh1);cursor:default}
+.k:hover{transform:translateY(-4px);box-shadow:var(--sh2)}
+.k .ki{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:rgba(255,255,255,.75);font-size:19px;box-shadow:0 4px 12px rgba(0,0,0,.05)}
+.k small{display:block;color:#5d5675;font-size:12.5px;margin-top:10px}
+.k b{display:block;font-size:26px;font-weight:700;letter-spacing:-.02em;line-height:1.2}
+.k:after{content:'';position:absolute;width:120px;height:120px;border-radius:50%;right:-40px;top:-40px;background:rgba(255,255,255,.35)}
+.t1{background:linear-gradient(150deg,#ede9fe,#ddd6fe)}.t2{background:linear-gradient(150deg,#d1fae5,#c7f0e3)}
+.t3{background:linear-gradient(150deg,#ffedd5,#fde3c4)}.t4{background:linear-gradient(150deg,#fce7f3,#f9d5ea)}
+.t5{background:linear-gradient(150deg,#fee2e2,#fdd3d3)}.t6{background:linear-gradient(150deg,#e0f2fe,#d2e9fb)}
+.dg{display:grid;grid-template-columns:1fr 360px;gap:16px}
+.dg2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+.grp{padding:4px 18px 16px}
+.grp h4{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu2);margin:14px 0 4px;font-weight:600}
+.br{display:grid;grid-template-columns:30px 1fr 30px;gap:10px;align-items:center;padding:6px 6px;margin:0 -6px;border-radius:11px;cursor:pointer;transition:.2s}
+.br:hover{background:var(--s2)}
+.br .e{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-size:15px;background:color-mix(in srgb,var(--c) 13%,#fff)}
+.br .t{display:flex;justify-content:space-between;font-size:12.5px;color:#4b4463}.br .t b{color:var(--tx);font-weight:600}
 .bar{height:6px;border-radius:6px;background:var(--s2);margin-top:5px;overflow:hidden}
-.bar i{display:block;height:100%;border-radius:6px;transition:width .8s var(--ease)}
-.eye{width:26px;height:26px;border-radius:8px;color:var(--mu);font-size:13px}
-.eye:hover{background:var(--s2)}.eye.off{opacity:.35}
-.br.off .t,.br.off .bar{opacity:.35}
-.side-list{max-height:calc(100vh - 340px);overflow:auto}
-.dg .mapcard{height:calc(100vh - 300px);min-height:380px}
+.bar i{display:block;height:100%;border-radius:6px;width:0;transition:width 1s var(--ease)}
+.eye{width:30px;height:30px;border-radius:9px;color:var(--mu2);display:grid;place-items:center}
+.eye:hover{background:#fff;color:var(--ac)}
+.br.off .t,.br.off .bar,.br.off .e{opacity:.35}
+.side-list{max-height:calc(100vh - 330px);overflow:auto}
+.ins{padding:6px 12px 14px}
+.in{display:flex;align-items:center;gap:12px;padding:10px;border-radius:13px;cursor:pointer;transition:.2s}
+.in:hover{background:var(--s2);transform:translateX(3px)}
+.in .x{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;flex:none}
+.in b{display:block;font-size:13px;font-weight:500}.in small{color:var(--mu);font-size:11.5px}
+.in .n{margin-left:auto;font-weight:700;font-size:15px}
+.x.w{background:#fef3c7;color:#b45309}.x.e{background:#fee2e2;color:#dc2626}.x.v{background:var(--acs);color:var(--ac)}.x.g{background:#d1fae5;color:#059669}
+.ok-all{display:flex;gap:10px;align-items:center;padding:16px;color:#059669}
 
 /* Map */
-.mapcard{position:relative;height:calc(100vh - 210px);min-height:420px;overflow:hidden}
+.mapcard{position:relative;height:calc(100vh - 320px);min-height:400px;overflow:hidden}
 .slot{position:absolute;inset:0}
 #mapBox{position:absolute;inset:0;border-radius:var(--r);overflow:hidden}
-#map{position:absolute;inset:0;background:#0e1014}
+#map{position:absolute;inset:0;background:#ece8f5}
 .mt{position:absolute;top:12px;right:12px;z-index:500;display:flex;flex-direction:column;gap:6px}
-.mt button,.mt select{width:38px;height:38px;border-radius:11px;background:rgba(20,23,29,.88);backdrop-filter:blur(8px);border:1px solid var(--ln);color:#cfd3d9;transition:.2s}
-.mt select{width:auto;padding:0 8px;font-size:12px;outline:0}
-.mt button:hover{color:#fff;border-color:rgba(242,135,58,.5)}
-.mt button.on{background:linear-gradient(135deg,var(--ac),#ea6b2b);color:#fff;border-color:transparent}
-.mcount{position:absolute;left:12px;top:12px;z-index:500;background:rgba(20,23,29,.88);backdrop-filter:blur(8px);border:1px solid var(--ln);padding:6px 12px;border-radius:20px;font-size:12px}
-.pickbar{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);z-index:600;background:#1f242c;border:1px solid rgba(242,135,58,.5);padding:8px 8px 8px 16px;border-radius:14px;display:flex;gap:12px;align-items:center;box-shadow:0 14px 40px rgba(0,0,0,.5);white-space:nowrap}
+.mt button,.mt select{width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,.92);backdrop-filter:blur(10px);border:1px solid var(--ln);color:#5b5473;transition:.2s;box-shadow:var(--sh1);display:grid;place-items:center}
+.mt select{width:auto;padding:0 10px;font-size:12.5px;outline:0;cursor:pointer}
+.mt button:hover{color:var(--ac);transform:translateY(-1px)}
+.mt button.on{background:linear-gradient(135deg,#8b5cf6,#a78bfa);color:#fff;border-color:transparent}
+.mcount{position:absolute;left:12px;top:12px;z-index:500;background:rgba(255,255,255,.92);backdrop-filter:blur(10px);border:1px solid var(--ln);padding:7px 13px;border-radius:20px;font-size:12px;box-shadow:var(--sh1);display:flex;gap:6px;align-items:center}
+.mcount .i{width:14px;height:14px;color:var(--ac)}
+.pickbar{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);z-index:600;background:#fff;border:1px solid var(--ac2);padding:8px 8px 8px 16px;border-radius:16px;display:flex;gap:12px;align-items:center;box-shadow:var(--sh2);white-space:nowrap;animation:pop .3s var(--ease)}
+.pickbar .i{color:var(--ac)}
 body.picking #map{cursor:crosshair}
-.leaflet-container{font-family:inherit;background:#0e1014}
-.leaflet-popup-content-wrapper{background:#1f242c;color:var(--tx);border-radius:14px;border:1px solid var(--ln)}
-.leaflet-popup-tip{background:#1f242c}
-.leaflet-popup-content{margin:12px 14px;min-width:220px}
-.leaflet-bar a{background:rgba(20,23,29,.9)!important;color:#cfd3d9!important;border-color:var(--ln)!important}
-.leaflet-control-attribution{background:rgba(20,23,29,.7)!important;color:#6b7280!important}
-.leaflet-control-attribution a{color:#9ca3af!important}
-.pp h5{font-size:14px;margin-bottom:6px;display:flex;gap:6px}
-.pp dl{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:12px;max-height:220px;overflow:auto}
-.pp dt{color:var(--mu)}.pp dd{text-align:right;word-break:break-word}
-.pp .a{display:flex;gap:6px;justify-content:flex-end;margin-top:10px}
-.pp a,.pp button{font-size:12px;padding:5px 10px;border-radius:8px;background:var(--s2);color:var(--tx);text-decoration:none}
+.leaflet-container{font-family:inherit;background:#ece8f5}
+.leaflet-popup-content-wrapper{border-radius:16px;box-shadow:var(--sh2);border:1px solid var(--ln)}
+.leaflet-popup-content{margin:14px 16px;min-width:230px;font-size:13px}
+.leaflet-bar{border:0!important;box-shadow:var(--sh1)!important;border-radius:12px!important;overflow:hidden}
+.leaflet-bar a{color:#5b5473!important;border-color:var(--ln)!important;width:36px!important;height:36px!important;line-height:36px!important}
+.pp h5{font-size:14px;margin-bottom:8px;display:flex;gap:8px;align-items:center}
+.pp h5 span{width:28px;height:28px;border-radius:9px;display:grid;place-items:center}
+.pp dl{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:12.5px;max-height:220px;overflow:auto}
+.pp dt{color:var(--mu)}.pp dd{text-align:right;word-break:break-word;font-weight:500}
+.pp .a{display:flex;gap:6px;justify-content:flex-end;margin-top:12px}
+.pp a,.pp button{font-size:12px;padding:6px 11px;border-radius:9px;background:var(--acs);color:var(--acd);text-decoration:none;display:inline-flex;gap:5px;align-items:center}
+.pp a:hover,.pp button:hover{background:var(--s3)}
+.pp .i{width:14px;height:14px}
+.pulse{width:20px;height:20px;border-radius:50%;margin:-10px 0 0 -10px;border:3px solid var(--ac);animation:pl 1.4s ease-out 3}
+@keyframes pl{from{transform:scale(.6);opacity:1}to{transform:scale(3.4);opacity:0}}
 
 /* Category */
-.cg{display:grid;grid-template-columns:minmax(340px,440px) 1fr;gap:16px}
-.lst{height:calc(100vh - 210px);min-height:420px;display:flex;flex-direction:column}
-.flt{margin:12px 14px 6px;height:38px;border-radius:11px;border:1px solid var(--ln);background:var(--bg);padding:0 12px;outline:0}
-.flt:focus{border-color:rgba(242,135,58,.5)}
-.items{flex:1;overflow:auto;padding:6px 10px 12px}
-.it{display:flex;gap:10px;padding:11px 10px;border-radius:12px;cursor:pointer;transition:background .2s;align-items:flex-start;animation:pin .35s var(--ease) both}
-.it:hover{background:var(--s2)}.it.sel{background:rgba(242,135,58,.12);box-shadow:inset 3px 0 0 var(--ac)}
-.it .dot{width:10px;height:10px;border-radius:50%;margin-top:6px;flex:none}
+.cg{display:grid;grid-template-columns:minmax(360px,460px) 1fr;gap:16px}
+.cg .mapcard{height:calc(100vh - 190px)}
+.lst{height:calc(100vh - 190px);min-height:420px;display:flex;flex-direction:column}
+.fl{padding:14px 14px 6px;display:flex;flex-direction:column;gap:9px;border-bottom:1px solid var(--ln)}
+.fin{position:relative}
+.fin input{width:100%;height:40px;border-radius:12px;border:1px solid var(--ln);background:var(--bg);padding:0 12px 0 36px;outline:0;transition:.2s}
+.fin input:focus{border-color:var(--ac2);background:#fff;box-shadow:0 0 0 4px rgba(139,92,246,.12)}
+.fin .i{position:absolute;left:11px;top:11px;color:var(--mu2)}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{height:30px;padding:0 12px;border-radius:20px;border:1px solid var(--ln);background:#fff;font-size:12px;color:#5b5473;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;transition:.2s}
+.chip:hover{border-color:var(--ac2);color:var(--acd)}
+.chip.on{background:var(--ac);border-color:var(--ac);color:#fff}
+.chip em{font-style:normal;font-size:10.5px;opacity:.75}
+.chip select{border:0;background:none;outline:0;font-size:12px;cursor:pointer;color:inherit}
+.items{flex:1;overflow:auto;padding:8px 10px 12px}
+.it{display:flex;gap:11px;padding:11px;border-radius:14px;cursor:pointer;transition:background .2s,transform .2s;align-items:flex-start;animation:pin .4s var(--ease) both}
+.it:hover{background:var(--s2)}
+.it.sel{background:var(--acs);box-shadow:inset 3px 0 0 var(--ac)}
+.it .dot{width:34px;height:34px;border-radius:11px;flex:none;display:grid;place-items:center;font-size:15px;background:color-mix(in srgb,var(--c) 14%,#fff)}
 .it .b{flex:1;min-width:0}
-.it b{font-weight:500;display:block}
-.it .s{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--mu);margin-top:2px}
-.it .nl{font-size:11px;color:#fbbf24}
-.it .ac{display:flex;gap:2px;opacity:0;transition:.2s}.it:hover .ac{opacity:1}
-.more{margin:8px auto;display:block}
-.empty{text-align:center;color:var(--mu);padding:50px 20px}.empty div{font-size:40px;opacity:.5}
+.it b{font-weight:500;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.it .s{display:flex;flex-wrap:wrap;gap:2px 12px;font-size:12px;color:var(--mu);margin-top:1px}
+.bdg{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;padding:1px 8px;border-radius:10px;margin:4px 4px 0 0;font-weight:500}
+.bdg.w{background:#fef3c7;color:#b45309}.bdg.e{background:#fee2e2;color:#dc2626}.bdg.v{background:var(--acs);color:var(--acd)}
+.it .ac{display:flex;gap:2px;opacity:0;transition:.2s}.it:hover .ac,.it.sel .ac{opacity:1}
+.more{margin:10px auto;display:flex}
+.empty{text-align:center;color:var(--mu);padding:50px 20px}.empty div{font-size:44px;margin-bottom:6px;animation:fl 3s ease-in-out infinite}
+@keyframes fl{50%{transform:translateY(-6px)}}
+.sk{border-radius:12px;background:linear-gradient(90deg,var(--s2) 25%,#fbf9ff 50%,var(--s2) 75%);background-size:300% 100%;animation:shm 1.3s infinite}
+@keyframes shm{from{background-position:100% 0}to{background-position:-100% 0}}
 
 /* Drawer / Modal */
-.ov{position:fixed;inset:0;background:rgba(5,6,8,.55);backdrop-filter:blur(3px);z-index:1100;opacity:0;pointer-events:none;transition:.3s}
+.ov{position:fixed;inset:0;background:rgba(42,36,64,.28);backdrop-filter:blur(4px);z-index:1100;opacity:0;pointer-events:none;transition:.35s}
 .ov.sh{opacity:1;pointer-events:auto}
-.dr{position:fixed;top:0;right:0;bottom:0;width:min(560px,100%);background:#1a1e25;border-left:1px solid var(--ln);z-index:1150;transform:translateX(100%);transition:transform .4s var(--ease);display:flex;flex-direction:column}
+.dr{position:fixed;top:0;right:0;bottom:0;width:min(580px,100%);background:#fff;z-index:1150;transform:translateX(105%);transition:transform .45s var(--ease);display:flex;flex-direction:column;box-shadow:-20px 0 60px rgba(76,29,149,.15)}
 .dr.sh{transform:none}
-body.picking .dr{transform:translateX(100%)}body.picking .ov{opacity:0;pointer-events:none}
-.dh{display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid var(--ln)}
-.dh h3{flex:1;font-size:17px;font-weight:600}
-.db{flex:1;overflow:auto;padding:18px 20px}
-.df{display:flex;gap:8px;justify-content:flex-end;padding:14px 20px;border-top:1px solid var(--ln)}
-.fg{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.fd{display:flex;flex-direction:column;gap:5px}.fd.w{grid-column:1/-1}
-.fd label{font-size:12px;color:var(--mu)}
-.fd input,.fd select,.fd textarea{height:40px;border-radius:10px;border:1px solid var(--ln);background:var(--bg);padding:0 12px;outline:0;transition:.2s;color-scheme:dark}
-.fd textarea{height:auto;padding:10px 12px;resize:vertical}
-.fd input:focus,.fd select:focus,.fd textarea:focus{border-color:rgba(242,135,58,.55);box-shadow:0 0 0 3px rgba(242,135,58,.1)}
-.fd input:disabled{opacity:.5}
-.loc{margin-top:16px;padding:14px;border-radius:14px;background:var(--bg);border:1px dashed rgba(242,135,58,.35)}
-.loc .row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
-.md{position:fixed;left:50%;top:50%;transform:translate(-50%,-48%) scale(.97);width:min(760px,94vw);max-height:88vh;background:#1a1e25;border:1px solid var(--ln);border-radius:18px;z-index:1160;display:flex;flex-direction:column;opacity:0;pointer-events:none;transition:.3s var(--ease)}
+body.picking .dr{transform:translateX(105%)}body.picking .ov{opacity:0;pointer-events:none}
+.dh{display:flex;align-items:center;gap:12px;padding:18px 22px;border-bottom:1px solid var(--ln)}
+.dh h3{flex:1;font-size:17px;font-weight:600;display:flex;align-items:center;gap:10px}
+.dh h3 span{width:36px;height:36px;border-radius:12px;display:grid;place-items:center}
+.db{flex:1;overflow:auto;padding:20px 22px}
+.df{display:flex;gap:8px;align-items:center;padding:14px 22px;border-top:1px solid var(--ln);background:var(--bg)}
+.df small{flex:1;color:var(--mu);font-size:11.5px}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fd{display:flex;flex-direction:column;gap:6px}.fd.w{grid-column:1/-1}
+.fd label{font-size:12.5px;color:#5d5675;font-weight:500;display:flex;gap:6px;align-items:center}
+.fd label small{color:var(--mu2);font-weight:400}
+.fd input,.fd select,.fd textarea{height:42px;border-radius:12px;border:1px solid var(--ln2);background:#fff;padding:0 13px;outline:0;transition:.2s}
+.fd textarea{height:auto;padding:10px 13px;resize:vertical}
+.fd input:focus,.fd select:focus,.fd textarea:focus{border-color:var(--ac);box-shadow:0 0 0 4px rgba(139,92,246,.13)}
+.fd input:disabled{background:var(--s2);color:var(--mu)}
+.fd .hint{font-size:11.5px;min-height:0}
+.fd .hint.e{color:var(--er)}.fd .hint.w{color:#b45309}.fd .hint.o{color:#059669}
+.fd.bad input{border-color:#fca5a5}
+.loc{margin-top:18px;padding:16px;border-radius:16px;background:linear-gradient(135deg,#faf7ff,#f3efff);border:1px dashed var(--ac2)}
+.loc>b{display:flex;gap:8px;align-items:center;color:var(--acd)}
+.loc .row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.loc .nb{font-size:12px;margin-top:10px;color:var(--mu)}
+.warn{margin-top:14px;padding:12px 14px;border-radius:13px;background:#fffbeb;border:1px solid #fde68a;color:#92400e;font-size:12.5px;display:flex;gap:9px}
+.md{position:fixed;left:50%;top:50%;transform:translate(-50%,-47%) scale(.96);width:min(780px,94vw);max-height:88vh;background:#fff;border-radius:22px;z-index:1160;display:flex;flex-direction:column;opacity:0;pointer-events:none;transition:.35s var(--ease);box-shadow:var(--sh2)}
 .md.sh{opacity:1;pointer-events:auto;transform:translate(-50%,-50%)}
-.urow{display:grid;grid-template-columns:1.4fr 1fr 1fr auto;gap:10px;align-items:center;padding:10px 12px;border-radius:12px;background:var(--bg);margin-bottom:8px;font-size:13px}
+.urow{display:grid;grid-template-columns:1.4fr 1fr 1fr auto;gap:10px;align-items:center;padding:11px 13px;border-radius:14px;background:var(--bg);margin-bottom:8px;font-size:13px;transition:.2s}
+.urow:hover{background:var(--s2)}
 .urow small{color:var(--mu);display:block;font-size:11px}
-.tag{font-size:11px;padding:2px 9px;border-radius:20px;background:var(--s2)}
-.tag.superadmin{background:rgba(242,135,58,.2);color:#ffc38f}.tag.admin{background:rgba(59,130,246,.2);color:#9cc3ff}
-.pm{border:1px solid var(--ln);border-radius:12px;padding:10px 12px;margin-top:10px}
-.pm h5{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;margin-bottom:6px}
+.tag{font-size:11px;padding:3px 10px;border-radius:20px;background:#eef2f7;color:#475569;font-weight:500}
+.tag.superadmin{background:#ede4ff;color:var(--acd)}.tag.admin{background:#e0f2fe;color:#0369a1}
+.pm{border:1px solid var(--ln);border-radius:14px;padding:12px 14px;margin-top:10px}
+.pm h5{display:flex;justify-content:space-between;align-items:center;font-size:13px;margin-bottom:6px}
 .pm .r{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:12.5px}
-.pm select{height:30px;border-radius:8px;background:var(--bg);border:1px solid var(--ln);padding:0 6px}
+.pm select{height:32px;border-radius:9px;background:#fff;border:1px solid var(--ln2);padding:0 8px}
 
 /* Login */
-.lg{position:fixed;inset:0;z-index:2000;display:grid;place-items:center;background:radial-gradient(800px 500px at 70% 20%,rgba(242,135,58,.16),transparent),var(--bg)}
-.lgc{width:min(380px,92vw);padding:30px 28px;border-radius:22px;background:var(--s1);border:1px solid var(--ln);box-shadow:0 30px 80px rgba(0,0,0,.5);animation:pin .5s var(--ease)}
-.lgc .logo{width:52px;height:52px;margin:0 auto 14px;font-size:18px}
-.lgc h2{text-align:center;font-size:20px}.lgc p{text-align:center;color:var(--mu);font-size:13px;margin-bottom:20px}
-.err{background:rgba(248,113,113,.12);color:#fca5a5;border-radius:10px;padding:9px 12px;font-size:13px;margin-bottom:12px}
+.lg{position:fixed;inset:0;z-index:2000;display:grid;place-items:center;overflow:hidden;background:linear-gradient(160deg,#f5f0ff,#ede7fb 50%,#f8f5ff)}
+.blob{position:absolute;border-radius:50%;filter:blur(60px);opacity:.55;animation:bl 16s ease-in-out infinite alternate;will-change:transform}
+.blob.a{width:420px;height:420px;background:#c4b5fd;left:-120px;top:-80px}
+.blob.b{width:380px;height:380px;background:#f0abfc;right:-100px;bottom:-100px;animation-delay:-6s}
+.blob.c{width:300px;height:300px;background:#a5f3fc;right:20%;top:10%;animation-delay:-11s;opacity:.35}
+@keyframes bl{to{transform:translate(60px,40px) scale(1.15)}}
+.lgc{position:relative;width:min(400px,92vw);padding:34px 30px 28px;border-radius:26px;background:rgba(255,255,255,.78);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.9);box-shadow:0 30px 80px rgba(76,29,149,.18);animation:pin .6s var(--ease)}
+.lgc .logo{width:58px;height:58px;margin:0 auto 14px;font-size:20px;border-radius:18px}
+.lgc h2{text-align:center;font-size:21px}.lgc>p{text-align:center;color:var(--mu);font-size:13px;margin-bottom:22px}
+.lgc .fd{margin-bottom:14px}
+.pw{position:relative}.pw input{width:100%;padding-right:44px}.pw button{position:absolute;right:4px;top:3px}
+.err{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;border-radius:12px;padding:10px 13px;font-size:13px;margin-bottom:14px;animation:shk .4s}
+@keyframes shk{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+.srv{text-align:center;font-size:11.5px;color:var(--mu2);margin-top:14px;display:flex;gap:6px;justify-content:center;align-items:center}
+.srv i{width:7px;height:7px;border-radius:50%;background:#d4d4d8}.srv.ok i{background:var(--ok);box-shadow:0 0 0 4px rgba(16,185,129,.15)}
 
-.tst{position:fixed;left:50%;bottom:26px;transform:translate(-50%,30px);opacity:0;z-index:3000;background:#262b34;border:1px solid var(--ln);padding:10px 18px;border-radius:12px;box-shadow:0 14px 40px rgba(0,0,0,.5);transition:.35s var(--ease);pointer-events:none}
-.tst.sh{opacity:1;transform:translate(-50%,0)}.tst.er{border-color:rgba(248,113,113,.5)}
-.demo{font-size:11px;padding:3px 9px;border-radius:20px;background:rgba(251,191,36,.15);color:#fcd34d}
+.tst{position:fixed;left:50%;bottom:28px;transform:translate(-50%,30px);opacity:0;z-index:3000;background:var(--tx);color:#fff;padding:11px 18px;border-radius:14px;box-shadow:var(--sh2);transition:.4s var(--ease);pointer-events:none;display:flex;gap:9px;align-items:center;font-size:13.5px}
+.tst.sh{opacity:1;transform:translate(-50%,0)}.tst.er{background:#b91c1c}.tst .i{width:17px;height:17px}
+.demo{font-size:11px;padding:3px 10px;border-radius:20px;background:#fef3c7;color:#92400e}
+.sync{font-size:11.5px;color:var(--mu2);display:flex;gap:5px;align-items:center}.sync .i{width:14px;height:14px}
 
-@media(max-width:1280px){.kp{grid-template-columns:repeat(3,1fr)}.dg{grid-template-columns:1fr}.side-list{max-height:none}}
+@media(max-width:1380px){.kp{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:1180px){.dg,.dg2{grid-template-columns:1fr}.side-list{max-height:none}}
 @media(max-width:960px){
   .app,body.rail .app{grid-template-columns:1fr}
-  .sb{position:fixed;inset:0 auto 0 0;width:270px;transform:translateX(-100%);transition:transform .35s var(--ease)}
-  body.nav .sb{transform:none;box-shadow:20px 0 60px rgba(0,0,0,.5)}
-  body.rail .brand{display:block}body.rail .ni .lb,body.rail .ni .ct{display:inline}
-  .colbtn{display:none}.hb{display:grid;place-items:center}
-  .tb{padding:0 12px}.srch input,.srch input:focus{width:150px}.qres{width:min(380px,92vw);right:-60px}
+  .sb{position:fixed;inset:0 auto 0 0;width:280px;transform:translateX(-102%);transition:transform .4s var(--ease)}
+  body.nav .sb{transform:none;box-shadow:20px 0 60px rgba(76,29,149,.2)}
+  body.nav .ov{opacity:1;pointer-events:auto}
+  body.rail .brand{display:block}body.rail .ni{justify-content:flex-start;padding:0 10px}body.rail .ni .lb,body.rail .ni .ct{display:inline}
+  body.rail .nv-g{font-size:10.5px;padding:14px 10px 6px;border:0;margin:0}
+  .colbtn{display:none}.ib.hb{display:inline-grid}
+  .tb{padding:0 10px;height:60px}.crumb .c2{display:none}
+  .srch input,.srch input:focus{width:150px}.srch kbd{display:none}.qres{width:min(420px,94vw);right:-50px}
   .view{padding:14px}.cg{grid-template-columns:1fr}
-  .lst{height:auto;min-height:0}.items{max-height:55vh}
-  .mapcard{height:60vh}.kp{grid-template-columns:repeat(2,1fr)}
+  .lst{height:auto;min-height:0}.items{max-height:52vh}
+  .mapcard,.cg .mapcard{height:58vh}.kp{grid-template-columns:repeat(2,1fr);gap:10px}
   .fg{grid-template-columns:1fr}.pt h1{font-size:21px}
   .urow{grid-template-columns:1fr auto}.urow>:nth-child(2),.urow>:nth-child(3){display:none}
+  #addTxt{display:none}
 }
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
+<div id="prog"></div>
 
 <div class="lg hide" id="login">
-  <form class="lgc" id="lgForm">
+  <div class="blob a"></div><div class="blob b"></div><div class="blob c"></div>
+  <form class="lgc" id="lgForm" autocomplete="on">
     <div class="logo">คต</div>
     <h2>CDDP</h2>
     <p>ระบบข้อมูลเมืองดิจิทัล · เทศบาลตำบลคลองตำหรุ</p>
     <div class="err hide" id="lgErr"></div>
-    <div class="fd" style="margin-bottom:12px"><label>ชื่อผู้ใช้</label><input id="lgU" autocomplete="username" autocapitalize="off" required></div>
-    <div class="fd" style="margin-bottom:18px"><label>รหัสผ่าน</label><input id="lgP" type="password" autocomplete="current-password" required></div>
-    <button class="btn pri" style="width:100%;justify-content:center" id="lgBtn">เข้าสู่ระบบ</button>
+    <div class="fd"><label><i data-ic="user"></i> ชื่อผู้ใช้</label><input id="lgU" autocomplete="username" autocapitalize="off" spellcheck="false" required></div>
+    <div class="fd"><label><i data-ic="lock"></i> รหัสผ่าน</label><div class="pw"><input id="lgP" type="password" autocomplete="current-password" required><button type="button" class="ib" id="lgEye" title="แสดงรหัส"><i data-ic="eye"></i></button></div></div>
+    <button class="btn pri" style="width:100%;justify-content:center;height:46px;margin-top:6px" id="lgBtn"><span>เข้าสู่ระบบ</span></button>
+    <div class="srv" id="srv"><i></i><span>กำลังเชื่อมต่อเซิร์ฟเวอร์…</span></div>
   </form>
 </div>
 
@@ -244,51 +331,53 @@ body.picking .dr{transform:translateX(100%)}body.picking .ov{opacity:0;pointer-e
     <div class="sb-h">
       <div class="logo">คต</div>
       <div class="brand"><b>CDDP</b><small>เทศบาลตำบลคลองตำหรุ</small></div>
-      <button class="colbtn" id="colBtn" title="ย่อ/ขยายเมนู">⇤</button>
+      <button class="colbtn" id="colBtn" title="ย่อ/ขยายเมนู"><i data-ic="panel"></i></button>
     </div>
     <nav class="nv" id="nav"><div class="ind" id="ind"></div><div id="navIn"></div></nav>
     <div class="sb-f">
-      <div class="me" id="meBtn"><span class="av" id="meAv">?</span><div><b id="meName">-</b><small id="meRole">-</small></div><span style="color:var(--mu)">⌃</span></div>
+      <div class="me" id="meBtn"><span class="av" id="meAv">?</span><div><b id="meName">-</b><small id="meRole">-</small></div><i data-ic="chev"></i></div>
       <div class="menu" id="menu">
-        <button data-m="sheet">📑 เปิด Google Sheet</button>
-        <button data-m="export">⬇️ ส่งออกข้อมูล (JSON)</button>
-        <button data-m="users" class="hide" id="mUsers">👥 จัดการผู้ใช้และสิทธิ์</button>
-        <button data-m="pw" id="mPw">🔑 เปลี่ยนรหัสผ่าน</button>
-        <button data-m="out" id="mOut">🚪 ออกจากระบบ</button>
+        <button data-m="refresh"><i data-ic="refresh"></i> ดึงข้อมูลล่าสุดจาก Sheet</button>
+        <button data-m="sheet" id="mSheet"><i data-ic="sheet"></i> เปิด Google Sheet</button>
+        <button data-m="export"><i data-ic="download"></i> ส่งออกข้อมูลทั้งหมด (JSON)</button>
+        <button data-m="users" class="hide" id="mUsers"><i data-ic="users"></i> จัดการผู้ใช้และสิทธิ์</button>
+        <hr>
+        <button data-m="pw" id="mPw"><i data-ic="key"></i> เปลี่ยนรหัสผ่าน</button>
+        <button data-m="out" id="mOut"><i data-ic="logout"></i> ออกจากระบบ</button>
       </div>
     </div>
   </aside>
 
   <main class="mn">
     <header class="tb">
-      <button class="hb" id="hbBtn">☰</button>
-      <div class="crumb" id="crumb">CDDP › <b>ภาพรวม</b></div>
+      <button class="ib hb" id="hbBtn"><i data-ic="menu"></i></button>
+      <div class="crumb" id="crumb"></div>
+      <span class="sync hide" id="sync"></span>
       <span class="demo hide" id="demoTag">โหมดทดลอง</span>
-      <div class="srch"><input id="q" placeholder="ค้นหาทุกหมวด…" autocomplete="off"><div class="qres hide" id="qres"></div></div>
-      <button class="btn pri hide" id="addBtn">＋ เพิ่มข้อมูล</button>
+      <div class="srch"><i data-ic="search"></i><input id="q" placeholder="ค้นหาชื่อ บ้านเลขที่ เบอร์โทร…" autocomplete="off"><kbd>/</kbd><div class="qres hide" id="qres"></div></div>
+      <button class="btn pri hide" id="addBtn"><i data-ic="plus"></i><span id="addTxt">เพิ่มข้อมูล</span></button>
     </header>
     <div class="view" id="view"></div>
   </main>
 </div>
 
-<!-- แผนที่ชุดเดียว ย้ายไปมาระหว่างหน้า (ไม่สร้างใหม่ = ลื่น) -->
 <div id="mapHome" class="hide">
   <div id="mapBox">
     <div id="map"></div>
-    <div class="mcount" id="mcount">0 จุด</div>
+    <div class="mcount"><i data-ic="pin"></i><span id="mcount">0 จุด</span></div>
     <div class="mt">
       <select id="baseSel" title="แผนที่ฐาน">
-        <option value="gsat">ดาวเทียม</option><option value="groad">ถนน</option>
-        <option value="esri">ดาวเทียม (สำรอง)</option><option value="light">สว่าง</option><option value="dark">มืด</option>
+        <option value="gsat">🛰️ ดาวเทียม</option><option value="groad">🗺️ ถนน</option>
+        <option value="esri">🌏 ดาวเทียมสำรอง</option><option value="light">☀️ สว่าง</option>
       </select>
-      <button id="tBnd" class="on" title="ขอบเขตเทศบาล">🏛️</button>
-      <button id="tRoad" title="เส้นถนน">🛣️</button>
-      <button id="tWater" title="ทางน้ำ/คลอง">🌊</button>
-      <button id="tLoc" title="ตำแหน่งของฉัน">📍</button>
-      <button id="tFit" title="พอดีเขตเทศบาล">⤢</button>
-      <button id="tFs" title="เต็มจอ">⛶</button>
+      <button id="tBnd" class="on" data-tip="ขอบเขตเทศบาล"><i data-ic="landmark"></i></button>
+      <button id="tRoad" data-tip="เส้นถนน"><i data-ic="road"></i></button>
+      <button id="tWater" data-tip="ทางน้ำ/คลอง"><i data-ic="waves"></i></button>
+      <button id="tLoc" data-tip="ตำแหน่งของฉัน"><i data-ic="locate"></i></button>
+      <button id="tFit" data-tip="พอดีเขตเทศบาล"><i data-ic="fit"></i></button>
+      <button id="tFs" data-tip="เต็มจอ"><i data-ic="full"></i></button>
     </div>
-    <div class="pickbar hide" id="pickBar">📍 คลิก/ลากหมุดเพื่อเลือกตำแหน่ง <button class="btn pri sm" id="pickDone">ใช้ตำแหน่งนี้</button></div>
+    <div class="pickbar hide" id="pickBar"><i data-ic="pin"></i> คลิกหรือลากหมุดเพื่อเลือกตำแหน่ง <button class="btn pri sm" id="pickDone"><i data-ic="check"></i> ใช้ตำแหน่งนี้</button></div>
   </div>
 </div>
 
@@ -297,597 +386,5 @@ body.picking .dr{transform:translateX(100%)}body.picking .ov{opacity:0;pointer-e
 <div class="md" id="md"></div>
 <div class="tip" id="tip"></div>
 <div class="tst" id="tst"></div>
-
-<script>
-'use strict';
-// ══════════ CONFIG ══════════
-const API = (window.CDDP_API || '').trim(), DEMO = !API;
-const GROUPS = [
-  ['hh','ครัวเรือน'],['inf','โครงสร้างพื้นฐาน'],['pub','สาธารณูปการ'],
-  ['env','สาธารณภัยและสิ่งแวดล้อม'],['hlt','สาธารณสุข'],['wf','สวัสดิการสังคม']
-];
-const HH = 'ชื่อหัวหน้าครัวเรือน|เลขที่บ้าน|หมู่|จำนวนสมาชิก|เบอร์โทร|หมายเหตุ';
-const CATS = {};
-[
- ['household_m1','ครัวเรือน หมู่ 1','🏠','#3b82f6','hh',HH],
- ['household_m2','ครัวเรือน หมู่ 2','🏠','#06b6d4','hh',HH],
- ['household_m3','ครัวเรือน หมู่ 3','🏠','#10b981','hh',HH],
- ['household_m5','ครัวเรือน หมู่ 5','🏠','#f59e0b','hh',HH],
- ['household_m6','ครัวเรือน หมู่ 6','🏠','#ef4444','hh',HH],
- ['road','ถนน','🛣️','#94a3b8','inf','ชื่อถนน|ประเภทผิว|ความยาวเมตร|ความกว้างเมตร|สภาพ|หมายเหตุ'],
- ['sidewalk','ทางเท้า','🚶','#a8a29e','inf','ชื่อทางเท้า|วัสดุ|ความยาวเมตร|สภาพ|หมายเหตุ'],
- ['streetlight','เสาไฟส่องสว่าง','💡','#facc15','inf','รหัสเสาไฟ|ประเภทหลอด|สถานะ|หมายเหตุ'],
- ['bridge','สะพาน','🌉','#a78bfa','inf','ชื่อสะพาน|ประเภท|ความยาวเมตร|สภาพ|หมายเหตุ'],
- ['hydrant','หัวดับเพลิง','🚒','#dc2626','inf','รหัสหัวดับเพลิง|ขนาดท่อ|สถานะ|หมายเหตุ'],
- ['speaker','เสียงตามสาย','📢','#0ea5e9','inf','รหัสจุดเสียงตามสาย|สถานะ|หมายเหตุ'],
- ['manhole','ฝาท่อ','🕳️','#64748b','inf','รหัสฝาท่อ|ขนาด|สภาพ|หมายเหตุ'],
- ['waterway','ทางน้ำ','🌊','#0284c7','inf','ชื่อทางน้ำ|ประเภท|ความยาวเมตร|สภาพ|หมายเหตุ'],
- ['govplace','สถานที่ราชการ','🏛️','#6366f1','pub','ชื่อสถานที่|หน่วยงาน|เบอร์โทร|หมายเหตุ'],
- ['religion','ศาสนสถาน','🛕','#f97316','pub','ชื่อศาสนสถาน|ศาสนา|ผู้ดูแล|หมายเหตุ'],
- ['school','สถานศึกษา','🏫','#22c55e','pub','ชื่อสถานศึกษา|ระดับ|จำนวนนักเรียน|หมายเหตุ'],
- ['hospital','สถานพยาบาล','🏥','#ec4899','pub','ชื่อสถานพยาบาล|ประเภท|เบอร์โทร|หมายเหตุ'],
- ['market','ตลาด','🛒','#eab308','pub','ชื่อตลาด|ประเภท|วันเปิด|หมายเหตุ'],
- ['disaster','ภัยพิบัติ','⚠️','#ef4444','env','ประเภทภัย|วันที่เกิด|ระดับความรุนแรง|ผู้ได้รับผลกระทบ|สถานะ|รายละเอียด'],
- ['fire_ext','ถังดับเพลิง','🧯','#b91c1c','env','รหัสถังดับเพลิง|ประเภท|วันตรวจล่าสุด|สถานะ|หมายเหตุ'],
- ['trash_bin','จุดที่ตั้งถังขยะ','🗑️','#16a34a','env','รหัสจุดถังขยะ|ประเภทขยะ|จำนวนถัง|หมายเหตุ'],
- ['pet','ทะเบียนสุนัขและแมว','🐕','#d97706','env','ชื่อ-นามสกุลเจ้าของ|เลขบัตรประชาชน|เบอร์โทรศัพท์|บ้านเลขที่|หมู่|แขวง/ตำบล|อำเภอ|ประเภทสัตว์|ชื่อ/อัตลักษณ์|เพศ|ประวัติการฉีดวัคซีน|วันที่ฉีดวัคซีนล่าสุด|การทำหมัน|อายุ (ปี)|อายุ (เดือน)|ลักษณะการเลี้ยง|สถานที่เลี้ยง|ปีสำรวจ|รอบที่|วันที่บันทึกข้อมูล|หมายเหตุ'],
- ['patient_dep','ผู้ป่วยภาวะพึ่งพิง','🧑‍🦽','#db2777','hlt','ชื่อผู้ป่วย|อายุ|ภาวะพึ่งพิง|ผู้ดูแล|เบอร์โทร|หมายเหตุ'],
- ['osm_cg','อสม./CG','🩺','#14b8a6','hlt','ชื่อสกุล|ประเภท|หมู่|เบอร์โทร|หมายเหตุ'],
- ['welfare_elder','เบี้ยผู้สูงอายุ','👴','#a855f7','wf','ชื่อสกุล|อายุ|เลขบัตรประชาชน|จำนวนเงิน|หมู่|หมายเหตุ'],
- ['welfare_disabled','เบี้ยผู้พิการ','♿','#3b82f6','wf','ชื่อสกุล|ประเภทความพิการ|เลขบัตรประชาชน|จำนวนเงิน|หมู่|หมายเหตุ'],
- ['welfare_newborn','เงินอุดหนุนเด็กแรกเกิด','👶','#f472b6','wf','ชื่อเด็ก|ชื่อผู้ปกครอง|วันเกิด|จำนวนเงิน|หมู่|หมายเหตุ'],
- ['welfare_aids','เบี้ยผู้ป่วยเอดส์','🎗️','#e11d48','wf','ชื่อสกุล|อายุ|จำนวนเงิน|หมู่|หมายเหตุ']
-].forEach(([k,l,i,c,g,f]) => CATS[k] = {k,l,i,c,g,f:f.split('|')});
-const OPTS = {
-  'สถานะ':['ปกติ','ชำรุด','ซ่อมแซม'], 'สภาพ':['ดี','พอใช้','ชำรุด'],
-  'ระดับความรุนแรง':['น้อย','ปานกลาง','รุนแรง'],
-  'ประเภทสัตว์':['สุนัข','แมว'], 'เพศ':['ผู้','เมีย'],
-  'ประวัติการฉีดวัคซีน':['เคยฉีด','ไม่เคยฉีด','ไม่ทราบ'], 'การทำหมัน':['ทำหมันแล้ว','ยังไม่ทำหมัน'],
-  'ลักษณะการเลี้ยง':['เลี้ยงในพื้นที่จำกัดตลอดเวลา','เลี้ยงแบบปล่อยตลอดเวลา','เลี้ยงในพื้นที่จำกัดเป็นบางเวลา','ไม่มีเจ้าของ'],
-  'สถานที่เลี้ยง':['บ้านพักอาศัย','วัด','โรงเรียน','สถานที่ราชการ','ที่สาธารณะ','อื่นๆ'], 'รอบที่':['1','2']
-};
-const PII = /บัตรประชาชน/;
-const keysOf = g => Object.keys(CATS).filter(k => CATS[k].g === g);
-
-// ══════════ STATE ══════════
-let DATA = {}, USER = null, TOKEN = sessionStorage.getItem('cddp_t') || '';
-let CUR = null, EID = null, HIDDEN = new Set(), MK = {}, LIMIT = 150;
-
-// ══════════ UTILS ══════════
-const $ = s => document.querySelector(s);
-const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const num = n => (+n || 0).toLocaleString('th-TH');
-const lv = k => (USER && USER.perms && USER.perms[k]) || 0;
-function fmt(f, v){
-  if(v == null || v === '') return '';
-  let s = String(v);
-  if(/เบอร์|โทร/.test(f)){ const d = s.replace(/\D/g,''); if((d.length===9||d.length===8) && d[0]!=='0') return '0'+d; }
-  if(/^\d{4}-\d{2}-\d{2}$/.test(s)){ const d = new Date(s); if(!isNaN(d)) return d.toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'numeric'}); }
-  return s;
-}
-function toast(m, t){
-  const e = $('#tst'); e.textContent = m; e.className = 'tst sh ' + (t||'');
-  clearTimeout(toast.t); toast.t = setTimeout(() => e.className = 'tst', 2600);
-}
-const hl = (s, q) => { s = String(s); const i = s.toLowerCase().indexOf(q); return i < 0 ? esc(s) : esc(s.slice(0,i))+'<mark>'+esc(s.slice(i,i+q.length))+'</mark>'+esc(s.slice(i+q.length)); };
-
-// ══════════ API ══════════
-async function api(action, p = {}){
-  if(DEMO) return demo(action, p);
-  const r = await fetch(API, {method:'POST', body: JSON.stringify({action, token: TOKEN, ...p})});
-  const j = await r.json();
-  if(j.error){
-    if(/AUTH_REQUIRED/.test(j.error)){ signOutLocal('เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่'); }
-    throw new Error(j.error);
-  }
-  return j;
-}
-function demo(a, p){
-  const db = JSON.parse(localStorage.getItem('cddp_demo') || '{}');
-  const put = () => localStorage.setItem('cddp_demo', JSON.stringify(db));
-  const perms = {}; Object.keys(CATS).forEach(k => perms[k] = 3);
-  const user = {username:'demo', name:'ผู้ใช้ทดลอง', role:'admin', pii:true, perms};
-  if(a === 'save'){
-    const l = db[p.cat] = db[p.cat] || [];
-    let r = p.rec.id && l.find(x => x.id === p.rec.id);
-    if(!r){ r = {id: Date.now().toString(36)}; l.push(r); }
-    Object.assign(r, p.rec, {ts: new Date().toISOString().slice(0,16).replace('T',' ')}); put();
-    return {ok:true, rec:r};
-  }
-  if(a === 'remove'){ db[p.cat] = (db[p.cat]||[]).filter(x => x.id !== p.id); put(); return {ok:true}; }
-  return {data: db, user};
-}
-
-// ══════════ AUTH ══════════
-function showLogin(msg){
-  $('#login').classList.remove('hide');
-  const e = $('#lgErr'); e.textContent = msg || ''; e.classList.toggle('hide', !msg);
-  setTimeout(() => $('#lgU').focus(), 100);
-}
-function signOutLocal(msg){
-  TOKEN = ''; USER = null; DATA = {}; sessionStorage.removeItem('cddp_t'); showLogin(msg);
-}
-$('#lgForm').addEventListener('submit', async e => {
-  e.preventDefault();
-  const b = $('#lgBtn'); b.disabled = true; b.textContent = 'กำลังตรวจสอบ…';
-  try{
-    const j = await api('login', {username: $('#lgU').value, password: $('#lgP').value});
-    TOKEN = j.token; sessionStorage.setItem('cddp_t', TOKEN); $('#lgP').value = '';
-    await loadAll();
-    toast('ยินดีต้อนรับ ' + USER.name);
-  }catch(err){ showLogin(err.message); }
-  b.disabled = false; b.textContent = 'เข้าสู่ระบบ';
-});
-
-async function loadAll(){
-  const j = await api('getAll');
-  DATA = j.data || {}; USER = j.user;
-  $('#login').classList.add('hide');
-  renderMe(); go(CUR && lv(CUR) ? CUR : null, true);
-}
-
-// ══════════ SIDEBAR ══════════
-function renderMe(){
-  $('#meName').textContent = USER.name;
-  $('#meAv').textContent = (USER.name || '?').trim().charAt(0);
-  $('#meRole').textContent = DEMO ? 'โหมดทดลอง' : ({superadmin:'ผู้ดูแลระบบสูงสุด',admin:'ผู้ดูแลระบบ'}[USER.role] || 'เจ้าหน้าที่');
-  $('#mUsers').classList.toggle('hide', USER.role !== 'superadmin' || DEMO);
-  $('#mPw').classList.toggle('hide', DEMO); $('#mOut').classList.toggle('hide', DEMO);
-  $('#demoTag').classList.toggle('hide', !DEMO);
-}
-function renderNav(){
-  let h = navItem('', '📊', 'ภาพรวม', '');
-  GROUPS.forEach(([g, gl]) => {
-    const ks = keysOf(g).filter(lv); if(!ks.length) return;
-    h += `<div class="nv-g">${gl}</div>` + ks.map(k => navItem(k, CATS[k].i, CATS[k].l, (DATA[k]||[]).length)).join('');
-  });
-  $('#navIn').innerHTML = h;
-  moveInd();
-}
-const navItem = (k, i, l, n) => `<div class="ni${(CUR||'')===k?' on':''}" data-go="${k}" data-tip="${esc(l)}"><span class="ic">${i}</span><span class="lb">${esc(l)}</span>${n!==''?`<span class="ct">${num(n)}</span>`:''}</div>`;
-function moveInd(){
-  const on = $('#navIn .ni.on'), ind = $('#ind');
-  if(!on){ ind.style.opacity = 0; return; }
-  ind.style.opacity = 1;
-  ind.style.left = on.offsetLeft + 'px'; ind.style.width = on.offsetWidth + 'px';
-  ind.style.transform = `translateY(${on.offsetTop}px)`;
-}
-$('#nav').addEventListener('click', e => {
-  const t = e.target.closest('[data-go]'); if(!t) return;
-  go(t.dataset.go || null);
-});
-// tooltip เมื่อย่อเมนู
-$('#nav').addEventListener('mouseover', e => {
-  const t = e.target.closest('.ni'), tip = $('#tip');
-  if(!t || !document.body.classList.contains('rail')){ tip.style.opacity = 0; return; }
-  const r = t.getBoundingClientRect();
-  tip.textContent = t.dataset.tip; tip.style.left = (r.right + 10) + 'px'; tip.style.top = (r.top + 8) + 'px'; tip.style.opacity = 1;
-});
-$('#nav').addEventListener('mouseleave', () => $('#tip').style.opacity = 0);
-$('#colBtn').onclick = () => {
-  document.body.classList.toggle('rail');
-  localStorage.setItem('cddp_rail', document.body.classList.contains('rail') ? 1 : '');
-  $('#colBtn').textContent = document.body.classList.contains('rail') ? '⇥' : '⇤';
-  setTimeout(moveInd, 360); setTimeout(() => map.invalidateSize(), 380);
-};
-if(localStorage.getItem('cddp_rail')){ document.body.classList.add('rail'); $('#colBtn').textContent = '⇥'; }
-$('#hbBtn').onclick = () => document.body.classList.toggle('nav');
-$('#meBtn').onclick = e => { e.stopPropagation(); $('#menu').classList.toggle('sh'); };
-document.addEventListener('click', e => {
-  if(!e.target.closest('#menu')) $('#menu').classList.remove('sh');
-  if(!e.target.closest('.srch')) $('#qres').classList.add('hide');
-});
-$('#menu').addEventListener('click', e => {
-  const m = e.target.closest('[data-m]'); if(!m) return;
-  $('#menu').classList.remove('sh');
-  ({ sheet: () => window.open(window.CDDP_SHEET_URL, '_blank'),
-     export: exportJSON, users: openUsers, pw: openPw,
-     out: () => { if(confirm('ออกจากระบบ?')){ api('logout').catch(()=>{}); signOutLocal(); } }
-  })[m.dataset.m]();
-});
-
-// ══════════ ROUTER ══════════
-function go(k, fit){
-  CUR = k || null; closeDrawer();
-  document.body.classList.remove('nav');
-  renderNav();
-  $('#crumb').innerHTML = CUR ? `CDDP › ${esc(GROUPS.find(g => g[0]===CATS[CUR].g)[1])} › <b>${esc(CATS[CUR].l)}</b>` : 'CDDP › <b>ภาพรวม</b>';
-  $('#addBtn').classList.toggle('hide', !(CUR && lv(CUR) >= 2));
-  CUR ? renderCat() : renderDash();
-  renderMap(true);
-  autoLines();
-}
-
-// ══════════ DASHBOARD ══════════
-function renderDash(){
-  const n = k => (DATA[k]||[]).length, sum = ks => ks.reduce((a,k) => a + n(k), 0);
-  let pop = 0; keysOf('hh').forEach(k => (DATA[k]||[]).forEach(r => pop += parseInt(r['จำนวนสมาชิก']) || 0));
-  const all = Object.keys(CATS).filter(lv);
-  const max = Math.max(1, ...all.map(n));
-  const hr = new Date().getHours();
-  const greet = hr < 12 ? 'สวัสดีตอนเช้า' : hr < 17 ? 'สวัสดีตอนบ่าย' : 'สวัสดีตอนเย็น';
-  const K = [['t1','🏠','ครัวเรือน',sum(keysOf('hh'))],['t2','👥','ประชากร',pop],['t3','🏗️','โครงสร้างพื้นฐาน',sum(keysOf('inf'))],
-             ['t4','🤝','ผู้รับสวัสดิการ',sum(keysOf('wf'))],['t5','⚠️','เหตุภัยพิบัติ',n('disaster')],['t6','📍','ข้อมูลทั้งหมด',sum(all)]];
-  let side = '';
-  GROUPS.forEach(([g, gl]) => {
-    const ks = keysOf(g).filter(lv); if(!ks.length) return;
-    side += `<h4>${gl}</h4>` + ks.map(k => { const c = CATS[k], off = HIDDEN.has(k);
-      return `<div class="br${off?' off':''}" data-go="${k}"><span class="e">${c.i}</span><div><div class="t"><span>${esc(c.l)}</span><b>${num(n(k))}</b></div><div class="bar"><i style="width:${n(k)/max*100}%;background:${c.c}"></i></div></div><button class="eye${off?' off':''}" data-eye="${k}" title="แสดง/ซ่อนบนแผนที่">${off?'◌':'◉'}</button></div>`;
-    }).join('');
-  });
-  $('#view').innerHTML = `<div class="page">
-    <div class="pt"><div><h1>${greet}, ${esc(USER.name)}</h1><p>ภาพรวมข้อมูลเมืองดิจิทัล เทศบาลตำบลคลองตำหรุ · ${new Date().toLocaleDateString('th-TH',{dateStyle:'full'})}</p></div></div>
-    <div class="dg">
-      <div class="card mapcard"><div class="slot" id="slot"></div></div>
-      <div class="card"><div class="ch"><h3>ข้อมูลตามหมวด</h3><small>คลิกเพื่อเปิด · ◉ ซ่อน/แสดง</small></div><div class="grp side-list">${side}</div></div>
-    </div>
-    <div class="kp">${K.map(([t,i,l,v]) => `<div class="k ${t}" data-i="${i}"><small>${i} ${l}</small><b>${num(v)}</b></div>`).join('')}</div>
-  </div>`;
-  mountMap();
-}
-$('#view').addEventListener('click', e => {
-  const eye = e.target.closest('[data-eye]');
-  if(eye){ e.stopPropagation(); const k = eye.dataset.eye; HIDDEN.has(k) ? HIDDEN.delete(k) : HIDDEN.add(k);
-    const row = eye.closest('.br'); row.classList.toggle('off'); eye.classList.toggle('off'); eye.textContent = HIDDEN.has(k)?'◌':'◉';
-    renderMap(); return; }
-  const g = e.target.closest('.br[data-go]'); if(g) return go(g.dataset.go);
-  const it = e.target.closest('.it[data-id]');
-  if(it){
-    if(e.target.closest('[data-ed]')) return openForm(it.dataset.id);
-    if(e.target.closest('[data-del]')) return removeRec(it.dataset.id);
-    focusRec(CUR, it.dataset.id);
-  }
-  if(e.target.id === 'moreBtn'){ LIMIT += 300; renderList(); }
-  if(e.target.id === 'csvBtn') exportCSV();
-});
-
-// ══════════ CATEGORY ══════════
-function renderCat(){
-  const c = CATS[CUR]; LIMIT = 150;
-  $('#view').innerHTML = `<div class="page">
-    <div class="pt"><div><h1>${c.i} ${esc(c.l)}</h1><p>ทั้งหมด ${num((DATA[CUR]||[]).length)} รายการ · คลิกรายการเพื่อดูบนแผนที่</p></div><div class="sp"></div>
-      <button class="btn sm" id="csvBtn">⬇ CSV</button></div>
-    <div class="cg">
-      <div class="card lst"><input class="flt" id="flt" placeholder="กรองรายการในหมวดนี้…"><div class="items" id="items"></div></div>
-      <div class="card mapcard"><div class="slot" id="slot"></div></div>
-    </div></div>`;
-  $('#flt').addEventListener('input', () => { LIMIT = 150; renderList(); });
-  renderList(); mountMap();
-}
-function renderList(){
-  const c = CATS[CUR], q = ($('#flt')?.value || '').trim().toLowerCase();
-  let l = DATA[CUR] || [];
-  if(q) l = l.filter(r => c.f.some(f => String(r[f] ?? '').toLowerCase().includes(q)));
-  l = l.slice().reverse();
-  const L = lv(CUR);
-  const h = l.slice(0, LIMIT).map((r, i) => {
-    const sub = c.f.slice(1).filter(f => !/หมายเหตุ|รายละเอียด/.test(f) && r[f] !== '' && r[f] != null).slice(0, 3)
-      .map(f => `<span>${esc(f)}: ${esc(fmt(f, r[f]))}</span>`).join('');
-    const noLoc = !(+r.lat && +r.lng);
-    return `<div class="it" data-id="${esc(r.id)}" style="animation-delay:${Math.min(i,15)*18}ms"><span class="dot" style="background:${c.c}"></span>
-      <div class="b"><b>${esc(fmt(c.f[0], r[c.f[0]]) || '(ไม่ระบุชื่อ)')}</b><div class="s">${sub}</div>${noLoc?'<span class="nl">⚠ ยังไม่มีพิกัด</span>':''}</div>
-      <div class="ac">${L>=2?'<button class="ib" data-ed title="แก้ไข">✎</button>':''}${L>=3?'<button class="ib" data-del title="ลบ">🗑</button>':''}</div></div>`;
-  }).join('');
-  $('#items').innerHTML = h || `<div class="empty"><div>${c.i}</div>${q?'ไม่พบรายการที่ค้นหา':'ยังไม่มีข้อมูลในหมวดนี้'}${!q&&L>=2?'<br><small>กด "＋ เพิ่มข้อมูล" ด้านบนเพื่อเริ่มต้น</small>':''}</div>`;
-  if(l.length > LIMIT) $('#items').insertAdjacentHTML('beforeend', `<button class="btn sm more" id="moreBtn">แสดงเพิ่ม (${num(l.length-LIMIT)})</button>`);
-}
-
-// ══════════ MAP ══════════
-const TILES = {
-  gsat:['https://mt{s}.google.com/vt?lyrs=y&hl=th&x={x}&y={y}&z={z}',{subdomains:'0123',maxZoom:21,attribution:'© Google'}],
-  groad:['https://mt{s}.google.com/vt?lyrs=m&hl=th&x={x}&y={y}&z={z}',{subdomains:'0123',maxZoom:21,attribution:'© Google'}],
-  esri:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:21,maxNativeZoom:19,attribution:'© Esri'}],
-  light:['https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',{subdomains:'abcd',maxZoom:21,maxNativeZoom:19,attribution:'© OSM © CARTO'}],
-  dark:['https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',{subdomains:'abcd',maxZoom:21,maxNativeZoom:19,attribution:'© OSM © CARTO'}]
-};
-const BND = BOUNDARY_RAW.trim().split(/\s+/).map(p => { const x = p.split(','); return [+x[1], +x[0]]; });
-const map = L.map('map', {preferCanvas:true, zoomControl:false, minZoom:12, maxZoom:21});
-L.control.zoom({position:'bottomright'}).addTo(map);
-const bnd = L.polygon(BND, {color:'#f2873a', weight:2.5, dashArray:'8 6', fillColor:'#f2873a', fillOpacity:.04, interactive:false}).addTo(map);
-map.fitBounds(bnd.getBounds(), {padding:[20,20]});
-map.setMaxBounds(bnd.getBounds().pad(.8));
-const pts = L.featureGroup().addTo(map);
-const MB = $('#mapBox');
-const roadL = L.layerGroup(ROAD_LINES.map(r => L.polyline(r.c, {color:'#fbbf24', weight:4, opacity:.9}).bindTooltip(r.n, {sticky:true})));
-const waterL = L.layerGroup(WATERWAY_LINES.map(w => L.polyline(w.c, {color:'#38bdf8', weight:5, opacity:.85}).bindTooltip(w.n, {sticky:true})));
-let tile = null;
-function setBase(k){
-  if(tile) map.removeLayer(tile);
-  const t = TILES[k]; tile = L.tileLayer(t[0], t[1]).addTo(map); tile.bringToBack();
-  $('#baseSel').value = k; localStorage.setItem('cddp_base', k);
-  let err = 0, ok = false;
-  if(k !== 'esri'){
-    tile.on('tileload', () => ok = true);
-    tile.on('tileerror', () => { if(++err === 4 && !ok){ setBase('esri'); toast('แผนที่ฐานโหลดไม่ได้ สลับเป็นแผนที่สำรองแล้ว'); } });
-  }
-}
-setBase(localStorage.getItem('cddp_base') || 'gsat');
-$('#baseSel').onchange = e => setBase(e.target.value);
-new ResizeObserver(() => map.invalidateSize()).observe($('#map'));
-
-function mountMap(){
-  const s = $('#slot'); if(s){ s.appendChild(MB); map.invalidateSize(false); setTimeout(() => map.invalidateSize(), 60); }
-}
-function renderMap(fit){
-  pts.clearLayers(); MK = {};
-  const ks = CUR ? [CUR] : Object.keys(CATS).filter(k => lv(k) && !HIDDEN.has(k));
-  let n = 0;
-  ks.forEach(k => { const c = CATS[k];
-    (DATA[k]||[]).forEach(r => {
-      const la = +r.lat, ln = +r.lng; if(!la || !ln) return;
-      const m = L.circleMarker([la, ln], {radius: CUR ? 8 : 6, color:'#fff', weight:2, fillColor:c.c, fillOpacity:1})
-        .bindPopup(() => popup(k, r), {maxWidth:300}).addTo(pts);
-      MK[k + ':' + r.id] = m; n++;
-    });
-  });
-  $('#mcount').textContent = num(n) + ' จุด' + (CUR ? '' : ' · ' + ks.length + ' หมวด');
-  if(fit){
-    if(CUR && n) map.flyToBounds(pts.getBounds(), {padding:[50,50], maxZoom:17, duration:.7});
-    else map.flyToBounds(bnd.getBounds(), {padding:[20,20], duration:.7});
-  }
-}
-function popup(k, r){
-  const c = CATS[k];
-  const rows = c.f.filter(f => r[f] !== '' && r[f] != null).map(f => `<dt>${esc(f)}</dt><dd>${esc(fmt(f, r[f]))}</dd>`).join('');
-  return `<div class="pp"><h5>${c.i} ${esc(c.l)}</h5><dl>${rows || '<dt>-</dt><dd></dd>'}</dl>
-    <div class="a"><a target="_blank" rel="noopener" href="https://www.google.com/maps?q=${+r.lat},${+r.lng}">🧭 นำทาง</a>
-    ${lv(k)>=2 ? `<button onclick="App.edit('${k}','${esc(r.id)}')">✎ แก้ไข</button>` : ''}</div></div>`;
-}
-function focusRec(k, id){
-  document.querySelectorAll('.it.sel').forEach(x => x.classList.remove('sel'));
-  const el = document.querySelector(`.it[data-id="${CSS.escape(String(id))}"]`); if(el){ el.classList.add('sel'); el.scrollIntoView({block:'nearest', behavior:'smooth'}); }
-  const m = MK[k + ':' + id];
-  if(!m) return toast('รายการนี้ยังไม่มีพิกัด', 'er');
-  if(innerWidth <= 960) $('#slot')?.scrollIntoView({behavior:'smooth'});
-  map.flyTo(m.getLatLng(), 18, {duration:.8});
-  map.once('moveend', () => m.openPopup());
-}
-function autoLines(){
-  if(CUR === 'road' && !map.hasLayer(roadL)) toggle('tRoad', roadL);
-  if(CUR === 'waterway' && !map.hasLayer(waterL)) toggle('tWater', waterL);
-}
-function toggle(id, layer){
-  const on = !map.hasLayer(layer); on ? layer.addTo(map) : map.removeLayer(layer);
-  $('#'+id).classList.toggle('on', on);
-}
-$('#tBnd').onclick = () => toggle('tBnd', bnd);
-$('#tRoad').onclick = () => toggle('tRoad', roadL);
-$('#tWater').onclick = () => toggle('tWater', waterL);
-$('#tFit').onclick = () => map.flyToBounds(bnd.getBounds(), {padding:[20,20], duration:.7});
-$('#tFs').onclick = () => { document.fullscreenElement ? document.exitFullscreen() : MB.requestFullscreen?.(); };
-let gps = null;
-$('#tLoc').onclick = () => {
-  if(!navigator.geolocation) return toast('อุปกรณ์ไม่รองรับ GPS', 'er');
-  navigator.geolocation.getCurrentPosition(p => {
-    const ll = [p.coords.latitude, p.coords.longitude];
-    if(gps) gps.remove();
-    gps = L.circleMarker(ll, {radius:9, color:'#fff', weight:3, fillColor:'#22c55e', fillOpacity:1}).addTo(map).bindPopup('ตำแหน่งของคุณ');
-    map.flyTo(ll, 17);
-  }, () => toast('ไม่สามารถระบุตำแหน่งได้', 'er'), {enableHighAccuracy:true, timeout:8000});
-};
-
-// ══════════ FORM (Drawer) ══════════
-function field(f, v){
-  v = v ?? ''; const n = `name="${esc(f)}"`, val = esc(v);
-  const w = (inner, wide, note) => `<div class="fd${wide?' w':''}"><label>${esc(f)}${note?` <small>· ${note}</small>`:''}</label>${inner}</div>`;
-  if(PII.test(f) && USER && !USER.pii) return w(`<input value="${val}" disabled>`, 0, 'ปิดบังตาม PDPA');
-  if(/หมายเหตุ|รายละเอียด/.test(f)) return w(`<textarea ${n} rows="3">${val}</textarea>`, 1);
-  if(OPTS[f]){ const l = OPTS[f].includes(String(v)) || !v ? OPTS[f] : [...OPTS[f], String(v)];
-    return w(`<select ${n}><option value=""></option>${l.map(x => `<option${x===String(v)?' selected':''}>${esc(x)}</option>`).join('')}</select>`); }
-  if(/^วัน(?!เปิด)|เกิด|ตรวจ/.test(f)) return w(`<input type="date" ${n} value="${val.slice(0,10)}">`);
-  if(/จำนวน|อายุ|ความยาว|ความกว้าง|เงิน/.test(f)) return w(`<input type="number" step="any" ${n} value="${val}">`);
-  if(/เบอร์|โทร/.test(f)) return w(`<input type="tel" ${n} value="${esc(fmt(f, v))}" placeholder="0XX-XXX-XXXX">`);
-  return w(`<input ${n} value="${val}">`);
-}
-function openForm(id){
-  if(!CUR || lv(CUR) < 2) return;
-  const c = CATS[CUR];
-  let r = {};
-  if(id){ r = (DATA[CUR]||[]).find(x => String(x.id) === String(id)); if(!r) return toast('ไม่พบรายการ กรุณารีเฟรช', 'er'); }
-  else {
-    const t = new Date(), m = CUR.match(/household_m(\d)/);
-    if(m) r['หมู่'] = m[1];
-    if(CUR === 'pet') Object.assign(r, {'แขวง/ตำบล':'คลองตำหรุ','อำเภอ':'เมืองชลบุรี','ปีสำรวจ':String(t.getFullYear()+543),
-      'วันที่บันทึกข้อมูล': t.toISOString().slice(0,10)});
-  }
-  EID = id || null;
-  $('#dr').innerHTML = `<div class="dh"><h3>${c.i} ${id?'แก้ไข':'เพิ่ม'}${esc(c.l)}</h3><button class="ib" id="drX">✕</button></div>
-    <form class="db" id="fm"><div class="fg">${c.f.map(f => field(f, r[f])).join('')}</div>
-      <div class="loc"><b>📍 ตำแหน่งที่ตั้ง</b>
-        <div class="fg" style="margin-top:10px">
-          <div class="fd"><label>ละติจูด (lat) *</label><input name="lat" type="number" step="any" value="${esc(r.lat||'')}" required></div>
-          <div class="fd"><label>ลองจิจูด (lng) *</label><input name="lng" type="number" step="any" value="${esc(r.lng||'')}" required></div>
-        </div>
-        <div class="row"><button type="button" class="btn sm" id="pickBtn">🗺️ เลือกบนแผนที่</button><button type="button" class="btn sm" id="gpsBtn">📡 ใช้ตำแหน่งปัจจุบัน</button></div>
-      </div>
-      ${r.updated_by ? `<p style="color:var(--mu);font-size:12px;margin-top:12px">แก้ไขล่าสุด ${esc(r.ts||'')} โดย ${esc(r.updated_by)}</p>` : ''}
-    </form>
-    <div class="df"><button class="btn" id="drC">ยกเลิก</button><button class="btn pri" id="drS">💾 บันทึก</button></div>`;
-  $('#dr').classList.add('sh'); $('#ov').classList.add('sh');
-  $('#drX').onclick = $('#drC').onclick = closeDrawer;
-  $('#drS').onclick = () => $('#fm').requestSubmit();
-  $('#fm').onsubmit = saveForm;
-  $('#pickBtn').onclick = startPick;
-  $('#gpsBtn').onclick = () => navigator.geolocation?.getCurrentPosition(p => setLL(p.coords.latitude, p.coords.longitude),
-    () => toast('ไม่สามารถระบุตำแหน่งได้', 'er'), {enableHighAccuracy:true, timeout:8000});
-}
-function setLL(la, ln){ const f = $('#fm'); if(!f) return; f.lat.value = (+la).toFixed(6); f.lng.value = (+ln).toFixed(6); }
-function closeDrawer(){ endPick(); $('#dr').classList.remove('sh'); $('#ov').classList.remove('sh'); EID = null; }
-$('#ov').onclick = () => { closeDrawer(); closeModal(); };
-async function saveForm(e){
-  e.preventDefault();
-  const rec = {}; new FormData($('#fm')).forEach((v, k) => rec[k] = String(v).trim());
-  if(!(+rec.lat) || !(+rec.lng)) return toast('กรุณาระบุตำแหน่ง', 'er');
-  if(EID) rec.id = EID;
-  const b = $('#drS'); b.disabled = true; b.textContent = 'กำลังบันทึก…';
-  try{
-    const j = await api('save', {cat: CUR, rec});
-    const l = DATA[CUR] = DATA[CUR] || [];
-    const i = l.findIndex(x => String(x.id) === String(j.rec.id));
-    i >= 0 ? l[i] = j.rec : l.push(j.rec);
-    closeDrawer(); renderNav(); renderList(); renderMap();
-    toast(EID ? 'แก้ไขเรียบร้อย' : 'เพิ่มข้อมูลเรียบร้อย');
-    setTimeout(() => focusRec(CUR, j.rec.id), 200);
-  }catch(err){ toast('บันทึกไม่สำเร็จ: ' + err.message, 'er'); b.disabled = false; b.textContent = '💾 บันทึก'; }
-}
-async function removeRec(id){
-  const r = (DATA[CUR]||[]).find(x => String(x.id) === String(id));
-  if(!confirm(`ลบ "${r ? r[CATS[CUR].f[0]] || id : id}" ?\nการลบไม่สามารถย้อนกลับได้`)) return;
-  try{
-    await api('remove', {cat: CUR, id});
-    DATA[CUR] = DATA[CUR].filter(x => String(x.id) !== String(id));
-    renderNav(); renderList(); renderMap(); toast('ลบเรียบร้อย');
-  }catch(err){ toast('ลบไม่สำเร็จ: ' + err.message, 'er'); }
-}
-window.App = { edit: (k, id) => { if(CUR !== k) go(k); setTimeout(() => openForm(id), CUR !== k ? 300 : 0); map.closePopup(); } };
-$('#addBtn').onclick = () => openForm(null);
-
-// เลือกตำแหน่งบนแผนที่หลัก
-let pickMk = null;
-function startPick(){
-  document.body.classList.add('picking'); $('#pickBar').classList.remove('hide');
-  $('#slot')?.scrollIntoView({behavior:'smooth'});
-  const f = $('#fm'); const ll = (+f.lat.value && +f.lng.value) ? L.latLng(+f.lat.value, +f.lng.value) : map.getCenter();
-  pickMk = L.marker(ll, {draggable:true}).addTo(map);
-  pickMk.on('drag', e => setLL(e.latlng.lat, e.latlng.lng));
-  setLL(ll.lat, ll.lng); map.flyTo(ll, Math.max(map.getZoom(), 17));
-}
-map.on('click', e => { if(pickMk){ pickMk.setLatLng(e.latlng); setLL(e.latlng.lat, e.latlng.lng); } });
-function endPick(){
-  document.body.classList.remove('picking'); $('#pickBar').classList.add('hide');
-  if(pickMk){ map.removeLayer(pickMk); pickMk = null; }
-}
-$('#pickDone').onclick = () => { endPick(); toast('ใช้ตำแหน่งนี้แล้ว'); };
-
-// ══════════ GLOBAL SEARCH ══════════
-let qT;
-$('#q').addEventListener('input', () => { clearTimeout(qT); qT = setTimeout(search, 140); });
-$('#q').addEventListener('focus', search);
-$('#q').addEventListener('keydown', e => {
-  const it = [...document.querySelectorAll('.qi')]; if(!it.length) return;
-  let i = it.findIndex(x => x.classList.contains('fc'));
-  if(e.key === 'ArrowDown' || e.key === 'ArrowUp'){ e.preventDefault(); it[i]?.classList.remove('fc'); i = (i + (e.key==='ArrowDown'?1:-1) + it.length) % it.length; it[i].classList.add('fc'); it[i].scrollIntoView({block:'nearest'}); }
-  if(e.key === 'Enter') (it[i] || it[0]).click();
-  if(e.key === 'Escape') $('#qres').classList.add('hide');
-});
-function search(){
-  const q = $('#q').value.trim().toLowerCase(), box = $('#qres');
-  if(!q) return box.classList.add('hide');
-  const res = [];
-  for(const k of Object.keys(DATA)){ const c = CATS[k]; if(!c) continue;
-    for(const r of DATA[k]){
-      const f = c.f.find(f => String(r[f] ?? '').toLowerCase().includes(q));
-      if(f) res.push({k, r, f, s: f === c.f[0] ? 2 : 1});
-    }
-  }
-  res.sort((a, b) => b.s - a.s);
-  box.innerHTML = res.length ? res.slice(0, 20).map((m, i) => { const c = CATS[m.k];
-    return `<div class="qi${i?'':' fc'}" data-k="${m.k}" data-id="${esc(m.r.id)}"><span class="d" style="background:${c.c}33">${c.i}</span>
-      <div><b>${hl(m.r[c.f[0]] || '(ไม่ระบุ)', q)}</b><small>${esc(c.l)}${m.f!==c.f[0]?' · '+esc(m.f)+': '+hl(m.r[m.f], q):''}</small></div></div>`;
-  }).join('') + (res.length > 20 ? `<div class="qi" style="cursor:default"><small>และอีก ${num(res.length-20)} รายการ…</small></div>` : '')
-  : '<div class="empty" style="padding:24px">ไม่พบข้อมูล</div>';
-  box.classList.remove('hide');
-}
-$('#qres').addEventListener('click', e => {
-  const t = e.target.closest('.qi[data-k]'); if(!t) return;
-  $('#qres').classList.add('hide'); $('#q').blur();
-  const {k, id} = t.dataset;
-  if(CUR !== k) go(k);
-  setTimeout(() => focusRec(k, id), CUR === k ? 0 : 750);
-});
-
-// ══════════ EXPORT ══════════
-function download(name, text, type){
-  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], {type})); a.download = name; a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-}
-function exportJSON(){ download('CDDP_' + new Date().toISOString().slice(0,10) + '.json', JSON.stringify(DATA, null, 2), 'application/json'); }
-function exportCSV(){
-  const c = CATS[CUR], h = [...c.f, 'lat', 'lng', 'ts', 'updated_by'];
-  const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
-  const csv = '﻿' + [h.map(q).join(','), ...(DATA[CUR]||[]).map(r => h.map(f => q(r[f])).join(','))].join('\n');
-  download(c.l + '.csv', csv, 'text/csv');
-}
-
-// ══════════ MODAL: USERS / PASSWORD ══════════
-function modal(html){ $('#md').innerHTML = html; $('#md').classList.add('sh'); $('#ov').classList.add('sh'); }
-function closeModal(){ $('#md').classList.remove('sh'); if(!$('#dr').classList.contains('sh')) $('#ov').classList.remove('sh'); }
-$('#md').addEventListener('click', e => { if(e.target.closest('[data-x]')) closeModal(); });
-
-function openPw(){
-  modal(`<div class="dh"><h3>🔑 เปลี่ยนรหัสผ่าน</h3><button class="ib" data-x>✕</button></div>
-    <form class="db" id="pwF" style="display:grid;gap:12px">
-      <div class="fd"><label>รหัสผ่านเดิม</label><input type="password" name="o" required></div>
-      <div class="fd"><label>รหัสผ่านใหม่ (อย่างน้อย 8 ตัว)</label><input type="password" name="n" minlength="8" required></div>
-      <div class="fd"><label>ยืนยันรหัสผ่านใหม่</label><input type="password" name="n2" required></div>
-      <button class="btn pri" style="justify-content:center">บันทึก</button></form>`);
-  $('#pwF').onsubmit = async e => {
-    e.preventDefault(); const f = e.target;
-    if(f.n.value !== f.n2.value) return toast('ยืนยันรหัสผ่านไม่ตรงกัน', 'er');
-    try{ await api('changePassword', {oldPw: f.o.value, newPw: f.n.value}); toast('เปลี่ยนรหัสผ่านแล้ว'); closeModal(); }
-    catch(err){ toast(err.message, 'er'); }
-  };
-}
-
-let UL = [];
-async function openUsers(){
-  modal(`<div class="dh"><h3>👥 ผู้ใช้และสิทธิ์</h3><button class="ib" data-x>✕</button></div><div class="db" id="ub">กำลังโหลด…</div>`);
-  try{ UL = (await api('listUsers')).users; userList(); }catch(err){ toast(err.message, 'er'); closeModal(); }
-}
-function userList(){
-  const R = {superadmin:'ผู้ดูแลสูงสุด', admin:'ผู้ดูแลระบบ', user:'เจ้าหน้าที่'};
-  $('#ub').innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><span style="color:var(--mu)">${UL.length} บัญชี</span><button class="btn pri sm" id="uNew">＋ เพิ่มผู้ใช้</button></div>` +
-    UL.map(u => `<div class="urow"><div><b>${esc(u.name)}</b><small>${esc(u.username)}</small></div>
-      <div><span class="tag ${esc(u.role)}">${R[u.role]||u.role}</span>${u.pii?'<small style="color:#fcd34d">เห็นเลขบัตร</small>':''}</div>
-      <div>${u.status==='disabled'?'<span style="color:var(--er)">ระงับ</span>':'ใช้งาน'}<small>${esc(u.last_login||'ยังไม่เคยเข้า')}</small></div>
-      <div><button class="ib" data-ue="${esc(u.username)}">✎</button>${u.username!==USER.username?`<button class="ib" data-ud="${esc(u.username)}">🗑</button>`:''}</div></div>`).join('');
-  $('#uNew').onclick = () => userForm(null);
-  $('#ub').onclick = async e => {
-    const ed = e.target.closest('[data-ue]'), dl = e.target.closest('[data-ud]');
-    if(ed) userForm(UL.find(u => u.username === ed.dataset.ue));
-    if(dl && confirm('ลบบัญชี ' + dl.dataset.ud + ' ?')){
-      try{ await api('deleteUser', {username: dl.dataset.ud}); UL = UL.filter(u => u.username !== dl.dataset.ud); userList(); toast('ลบผู้ใช้แล้ว'); }
-      catch(err){ toast(err.message, 'er'); }
-    }
-  };
-}
-function userForm(u){
-  const p = (u && u.perms) || {};
-  const sel = (k, v) => `<select name="p_${k}">${[['','ปิด'],['r','ดู'],['w','แก้ไข'],['d','ลบ']].map(([a,b]) => `<option value="${a}"${(v||'')===a?' selected':''}>${b}</option>`).join('')}</select>`;
-  $('#ub').innerHTML = `<form id="uF"><div class="fg">
-    <div class="fd"><label>ชื่อผู้ใช้ *</label><input name="username" value="${esc(u?.username||'')}" ${u?'readonly':''} required pattern="[a-z0-9._\\-]{3,30}" placeholder="somchai.k"></div>
-    <div class="fd"><label>ชื่อ-นามสกุล *</label><input name="name" value="${esc(u?.name||'')}" required></div>
-    <div class="fd"><label>บทบาท</label><select name="role">${[['user','เจ้าหน้าที่ (กำหนดรายหมวด)'],['admin','ผู้ดูแลระบบ (ทุกหมวด)'],['superadmin','ผู้ดูแลสูงสุด (จัดการผู้ใช้)']].map(([a,b]) => `<option value="${a}"${(u?.role||'user')===a?' selected':''}>${b}</option>`).join('')}</select></div>
-    <div class="fd"><label>สถานะ</label><select name="status"><option value="active">ใช้งาน</option><option value="disabled"${u?.status==='disabled'?' selected':''}>ระงับ</option></select></div>
-    <div class="fd w"><label>${u?'ตั้งรหัสผ่านใหม่ (เว้นว่าง = ไม่เปลี่ยน)':'รหัสผ่าน * (อย่างน้อย 8 ตัว)'}</label><input name="password" type="text" minlength="8" ${u?'':'required'}></div>
-    <label class="fd w" style="flex-direction:row;gap:8px;align-items:center;font-size:13px"><input type="checkbox" name="pii" ${u?.pii?'checked':''} style="height:auto"> อนุญาตให้เห็นเลขบัตรประชาชนเต็ม (ข้อมูลอ่อนไหว PDPA)</label>
-  </div>
-  <div id="pmw">${GROUPS.map(([g, gl], gi) => `<div class="pm"><h5>${gl}<select data-gs="${g}"><option value="-">ตั้งทั้งกลุ่ม…</option><option value="">ปิด</option><option value="r">ดู</option><option value="w">แก้ไข</option><option value="d">ลบ</option></select></h5>
-    ${keysOf(g).map(k => `<div class="r"><span>${CATS[k].i} ${esc(CATS[k].l)}</span>${sel(k, p[k])}</div>`).join('')}</div>`).join('')}</div>
-  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px"><button type="button" class="btn" id="uBack">← กลับ</button><button class="btn pri">💾 บันทึก</button></div></form>`;
-  const F = $('#uF');
-  const tg = () => $('#pmw').classList.toggle('hide', F.role.value !== 'user'); tg(); F.role.onchange = tg;
-  F.querySelectorAll('[data-gs]').forEach(s => s.onchange = () => { if(s.value === '-') return;
-    keysOf(s.dataset.gs).forEach(k => F['p_'+k].value = s.value); s.value = '-'; });
-  $('#uBack').onclick = userList;
-  F.onsubmit = async e => {
-    e.preventDefault();
-    const d = {username: F.username.value.trim().toLowerCase(), name: F.name.value.trim(), role: F.role.value,
-      status: F.status.value, pii: F.pii.checked, perms: {}};
-    if(F.password.value) d.password = F.password.value;
-    Object.keys(CATS).forEach(k => { if(F['p_'+k].value) d.perms[k] = F['p_'+k].value; });
-    try{ await api('saveUser', {user: d}); UL = (await api('listUsers')).users; userList(); toast('บันทึกผู้ใช้แล้ว'); }
-    catch(err){ toast(err.message, 'er'); }
-  };
-}
-
-// ══════════ BOOT ══════════
-addEventListener('resize', () => { clearTimeout(window._rz); window._rz = setTimeout(moveInd, 120); });
-document.addEventListener('keydown', e => { if(e.key === 'Escape'){ closeDrawer(); closeModal(); } if(e.key === '/' && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)){ e.preventDefault(); $('#q').focus(); } });
-(async () => {
-  if(!DEMO && !TOKEN) return showLogin();
-  try{ await loadAll(); }catch(err){ if(!$('#login').classList.contains('hide')) return; DEMO ? toast(err.message,'er') : showLogin(); }
-})();
-</script>
 </body>
 </html>

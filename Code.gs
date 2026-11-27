@@ -61,11 +61,11 @@ function route_(r) {
   const u = auth_(r.token);
   const su = () => { if (u.role !== 'superadmin') throw new Error('ไม่มีสิทธิ์'); };
   switch (r.action) {
-    case 'getAll': return { data: getAll_(u), user: pub_(u) };
+    case 'getAll': return { data: getAll_(u, r.fresh), user: pub_(u) };
     case 'save': return saveRec_(u, r.cat, r.rec || {});
     case 'remove': return removeRec_(u, r.cat, r.id);
     case 'logout': CacheService.getScriptCache().remove('t_' + r.token); return { ok: true };
-    case 'changePassword': return changePw_(u, r.oldPw, r.newPw);
+    case 'changePassword': return changePw_(readUsers_().find(x => x.username === u.username), r.oldPw, r.newPw);
     case 'listUsers': su(); return { users: readUsers_().map(x => ({
       username: x.username, name: x.name, role: x.role, status: x.status, pii: x.pii,
       perms: x.permsObj, last_login: x.last_login })) };
@@ -92,14 +92,20 @@ function login_(username, password) {
   c.put('t_' + token, u.username, TOKEN_TTL);
   sheet_('Users').getRange(u.row, USER_H.indexOf('last_login') + 1).setValue(now_());
   log_(u.username, 'login');
-  return { token, user: pub_(u) };
+  return { token, user: pub_(u), data: getAll_(u) };
 }
 
 function auth_(token) {
   const c = CacheService.getScriptCache();
   const name = token && c.get('t_' + token);
   if (!name) throw new Error('AUTH_REQUIRED');
-  const u = readUsers_().find(x => x.username === name);
+  let u = null;
+  const cu = c.get('u_' + name);
+  if (cu) u = JSON.parse(cu);
+  else {
+    u = readUsers_().find(x => x.username === name);
+    if (u) c.put('u_' + name, JSON.stringify({ username: u.username, name: u.name, role: u.role, status: u.status, pii: u.pii, permsObj: u.permsObj }), 300);
+  }
   if (!u || u.status !== 'active') throw new Error('AUTH_REQUIRED');
   c.put('t_' + token, name, TOKEN_TTL);
   return u;
@@ -118,42 +124,83 @@ function pub_(u) {
 }
 
 // ── Data ──
-function getAll_(u) {
+function getAll_(u, fresh) {
+  const keys = Object.keys(CATS).filter(k => level_(u, k));
+  const raw = fresh ? {} : cacheGet_(keys);
   const res = {};
-  Object.keys(CATS).forEach(k => { if (level_(u, k)) res[k] = readCat_(k, u.pii); });
+  keys.forEach(k => {
+    if (!raw[k]) { raw[k] = readCat_(k); cachePut_(k, raw[k]); }
+    res[k] = u.pii ? raw[k] : raw[k].map(maskRow_);
+  });
   return res;
 }
+function maskRow_(o) {
+  const r = {};
+  Object.keys(o).forEach(k => r[k] = PII.test(k) ? mask_(o[k]) : o[k]);
+  return r;
+}
+// แคชข้อมูลฝั่งเซิร์ฟเวอร์ (แบ่งเป็นชิ้น ≤ 30,000 ตัวอักษร) อายุ 10 นาที
+const CHUNK = 30000, CTTL = 600;
+function cacheGet_(keys) {
+  const c = CacheService.getScriptCache(), out = {};
+  const ns = c.getAll(keys.map(k => 'd_' + k + '_n'));
+  const want = [];
+  keys.forEach(k => { const n = +ns['d_' + k + '_n'] || 0; for (let i = 0; i < n; i++) want.push('d_' + k + '_' + i); });
+  const parts = want.length ? c.getAll(want) : {};
+  keys.forEach(k => {
+    const n = +ns['d_' + k + '_n'] || 0; if (!n) return;
+    let str = '';
+    for (let i = 0; i < n; i++) { const p = parts['d_' + k + '_' + i]; if (p == null) return; str += p; }
+    try { out[k] = JSON.parse(str); } catch (_) {}
+  });
+  return out;
+}
+function cachePut_(k, rows) {
+  try {
+    const str = JSON.stringify(rows), o = {};
+    let n = 0;
+    for (let i = 0; i < str.length; i += CHUNK) o['d_' + k + '_' + (n++)] = str.slice(i, i + CHUNK);
+    o['d_' + k + '_n'] = String(n);
+    if (n <= 80) CacheService.getScriptCache().putAll(o, CTTL);
+  } catch (_) {}
+}
+function cacheDrop_(k) { CacheService.getScriptCache().remove('d_' + k + '_n'); }
 
 function catSheet_(key, create) {
   const ss = ss_();
-  let sh = ss.getSheetByName(CATS[key]) || ss.getSheetByName(key);
+  if (!_sm) { _sm = {}; ss.getSheets().forEach(x => _sm[x.getName()] = x); }
+  let sh = _sm[CATS[key]] || _sm[key];
   if (!sh && create) {
     sh = ss.insertSheet(CATS[key]);
+    _sm[CATS[key]] = sh;
     sh.getRange(1, 1, 1, SYS.length).setValues([SYS]);
     styleHead_(sh, SYS.length);
   }
   return sh;
 }
 
-function readCat_(key, pii) {
+function hdr_(x) { x = String(x).trim(); for (const a in ALIAS) if (ALIAS[a].test(x)) return a; return x; }
+const ALIAS = { lat: /^(lat|latitude|ละติจูด)$/i, lng: /^(lng|lon|long|longitude|ลองจิจูด)$/i };
+function readCat_(key) {
   const sh = catSheet_(key);
   if (!sh || sh.getLastRow() < 2) return [];
   const v = sh.getDataRange().getValues();
-  const h = v[0].map(String);
+  const h = v[0].map(hdr_);
   let idc = h.indexOf('id');
   if (idc < 0) { idc = h.length; h.push('id'); sh.getRange(1, idc + 1).setValue('id'); }
-  const miss = [];
+  const ids = [];
+  let miss = false;
   const rows = [];
   for (let i = 1; i < v.length; i++) {
-    if (v[i].every(x => x === '')) continue;
+    if (v[i].every(x => x === '')) { ids.push([v[i][idc] || '']); continue; }
     const o = {};
     h.forEach((k, j) => { if (k) o[k] = cell_(k, v[i][j]); });
-    if (!o.id) { o.id = newId_(); miss.push([i + 1, o.id]); }
-    if (!pii) Object.keys(o).forEach(k => { if (PII.test(k)) o[k] = mask_(o[k]); });
+    if (!o.id) { o.id = newId_() + i.toString(36); miss = true; }
+    ids.push([o.id]);
     rows.push(o);
   }
-  // เติม id ให้แถวที่กรอกเองในชีต (ทำครั้งเดียว)
-  miss.forEach(([r, id]) => sh.getRange(r, idc + 1).setNumberFormat('@').setValue(id));
+  // เติม id ให้แถวที่กรอกเองในชีต — เขียนครั้งเดียวทั้งคอลัมน์
+  if (miss) sh.getRange(2, idc + 1, ids.length, 1).setNumberFormat('@').setValues(ids);
   return rows;
 }
 
@@ -164,7 +211,7 @@ function saveRec_(u, cat, rec) {
   try {
     const sh = catSheet_(cat, true);
     const lastCol = Math.max(sh.getLastColumn(), 1);
-    const h = sh.getRange(1, 1, 1, lastCol).getValues()[0].map(String);
+    const h = sh.getRange(1, 1, 1, lastCol).getValues()[0].map(hdr_);
     const keys = Object.keys(rec).filter(k => k && k.length <= 60 && k[0] !== '_'
       && k !== 'ts' && k !== 'updated_by' && k !== 'id' && !(PII.test(k) && !u.pii));
     SYS.concat(keys).forEach(k => {
@@ -183,6 +230,7 @@ function saveRec_(u, cat, rec) {
     const vals = h.map((k, j) => k in set ? set[k] : cur[j]);
     if (row < 0) row = sh.getLastRow() + 1;
     sh.getRange(row, 1, 1, h.length).setNumberFormat('@').setValues([vals]);
+    cacheDrop_(cat);
     log_(u.username, rec.id ? 'update' : 'add', cat, id);
     const o = {};
     h.forEach((k, j) => { if (k) o[k] = cell_(k, vals[j]); });
@@ -197,10 +245,10 @@ function removeRec_(u, cat, id) {
   try {
     const sh = catSheet_(cat);
     if (!sh) throw new Error('ไม่พบชีต');
-    const h = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String);
+    const h = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(hdr_);
     const ids = sh.getRange(1, h.indexOf('id') + 1, sh.getLastRow(), 1).getDisplayValues();
     for (let i = ids.length - 1; i >= 1; i--) {
-      if (ids[i][0] === String(id)) { sh.deleteRow(i + 1); log_(u.username, 'delete', cat, id); return { ok: true }; }
+      if (ids[i][0] === String(id)) { sh.deleteRow(i + 1); cacheDrop_(cat); log_(u.username, 'delete', cat, id); return { ok: true }; }
     }
     throw new Error('ไม่พบรายการ');
   } finally { lock.releaseLock(); }
@@ -243,6 +291,7 @@ function saveUser_(me, d) {
     const s = Utilities.getUuid();
     sh.appendRow(base.concat([s, hash_(s, d.password), '']));
   }
+  CacheService.getScriptCache().remove('u_' + username);
   log_(me.username, ex ? 'user-update' : 'user-add', '', username);
   return { ok: true };
 }
@@ -252,6 +301,7 @@ function deleteUser_(me, username) {
   const u = readUsers_().find(x => x.username === username);
   if (!u) throw new Error('ไม่พบผู้ใช้');
   sheet_('Users').deleteRow(u.row);
+  CacheService.getScriptCache().remove('u_' + username);
   log_(me.username, 'user-delete', '', username);
   return { ok: true };
 }
@@ -266,7 +316,7 @@ function changePw_(u, oldPw, newPw) {
 }
 
 // ── Utils ──
-let _ss;
+let _ss, _sm;
 function ss_() { return _ss || (_ss = SpreadsheetApp.openById(SPREADSHEET_ID)); }
 function sheet_(name) { return ss_().getSheetByName(name) || ss_().insertSheet(name); }
 function out_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
